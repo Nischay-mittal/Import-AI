@@ -1,0 +1,50 @@
+========================================
+HOW TO START THE FRONTEND SERVER
+========================================
+
+YOUR POWERSHELL IS NOT WORKING PROPERLY
+Use one of these methods instead:
+
+METHOD 1: Double-click the batch file
+--------------------------------------
+1. Double-click: RUN-FRONTEND.cmd
+2. Wait for the server to start
+3. Browser will open automatically
+4. KEEP THE WINDOW OPEN while using the app
+
+METHOD 2: Use Command Prompt (cmd.exe)
+--------------------------------------
+1. Press Win + R
+2. Type: cmd
+3. Press Enter
+4. Type these commands one by one:
+
+   cd /d C:\Users\ASUS\OneDrive\Desktop\importai\frontend
+   npm run dev
+
+5. Wait for "ready" message
+6. Open http://localhost:8080 in browser
+7. KEEP THE WINDOW OPEN
+
+METHOD 3: Use File Explorer
+----------------------------
+1. Open File Explorer
+2. Navigate to: C:\Users\ASUS\OneDrive\Desktop\importai\frontend
+3. Click in the address bar
+4. Type: cmd
+5. Press Enter
+6. Type: npm run dev
+7. Press Enter
+8. Wait for server to start
+9. KEEP THE WINDOW OPEN
+
+========================================
+IMPORTANT NOTES:
+========================================
+- The server MUST be running for the website to work
+- Keep the terminal/command window OPEN
+- To stop: Press Ctrl+C in that window
+- If you see errors, share them with me
+
+========================================
+

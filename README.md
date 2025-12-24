@@ -13,7 +13,17 @@ import-ai-time-saver-34-main/
 
 ## Quick Start
 
-### Backend Setup
+### Option 1: Quick Start (Windows)
+
+**Double-click `start-local.bat`** to start both servers automatically.
+
+Or use the individual scripts:
+- `start-backend.bat` - Start backend only
+- `start-frontend.bat` - Start frontend only
+
+### Option 2: Manual Setup
+
+#### Backend Setup
 
 1. **Navigate to backend directory:**
    ```bash
@@ -26,32 +36,31 @@ import-ai-time-saver-34-main/
    ```
 
 3. **Set up environment variables:**
-   ```bash
-   # Copy the example file
-   copy .env.example .env
-   ```
    
-   Edit `.env` with your values:
+   Create a `.env` file in the `backend` folder with:
    ```
-   MONGODB_URI=mongodb://localhost:27017/importai
-   JWT_SECRET=your-secret-key-here
-   PORT=5000
    FRONTEND_URL=http://localhost:8080
+   JWT_SECRET=importai_super_secret_jwt_2025
+   MONGODB_URI=your_mongodb_connection_string_here
+   PORT=5000
    ```
 
 4. **Start MongoDB** (if running locally):
    - Install MongoDB Community Edition
    - Start MongoDB service
-   - Or use MongoDB Atlas (cloud)
+   - Or use MongoDB Atlas (cloud) and update `MONGODB_URI` in `.env`
 
 5. **Start the backend server:**
    ```bash
+   npm start
+   # or for development with auto-reload:
    npm run dev
    ```
    
    The API will be available at `http://localhost:5000`
+   - Health check: `http://localhost:5000/health`
 
-### Frontend Setup
+#### Frontend Setup
 
 1. **Navigate to frontend directory:**
    ```bash
@@ -63,11 +72,14 @@ import-ai-time-saver-34-main/
    npm install
    ```
 
-3. **Set up environment variables:**
-   ```bash
-   # Create .env.local file
-   echo VITE_API_URL=http://localhost:5000 > .env.local
+3. **Set up environment variables (optional):**
+   
+   Create a `.env.local` file in the `frontend` folder:
    ```
+   VITE_API_URL=http://localhost:5000
+   ```
+   
+   Note: If not set, it defaults to `http://localhost:5000`
 
 4. **Start the development server:**
    ```bash
@@ -100,7 +112,7 @@ import-ai-time-saver-34-main/
 - `GET /go/demos` - Redirect to demos page
 
 #### Health Check
-- `GET /api/health` - API status check
+- `GET /health` - API status check (returns `{ "status": "ok" }`)
 
 ## Testing the Authentication Flow
 

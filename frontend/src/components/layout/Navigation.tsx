@@ -40,7 +40,7 @@ export function Navigation() {
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-3">
           <img 
-            src="/lovable-uploads/60f635ed-3fbe-4d07-b2aa-b6af5d734839.png" 
+            src="/Import AI Logo PNG.png" 
             alt="Import AI Logo" 
             className="w-10 h-10 object-contain"
           />

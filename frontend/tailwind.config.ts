@@ -99,8 +99,60 @@ export default {
 					'50%': { opacity: '0.8' }
 				},
 				'float': {
-					'0%, 100%': { transform: 'translateY(0px)' },
-					'50%': { transform: 'translateY(-10px)' }
+					'0%, 100%': { transform: 'translateY(0px) translateX(0px)' },
+					'33%': { transform: 'translateY(-20px) translateX(10px)' },
+					'66%': { transform: 'translateY(-10px) translateX(-10px)' }
+				},
+				'pulse-slow': {
+					'0%, 100%': { opacity: '1', transform: 'scale(1)' },
+					'50%': { opacity: '0.7', transform: 'scale(1.05)' }
+				},
+				'spin-slow': {
+					'0%': { transform: 'rotate(0deg)' },
+					'100%': { transform: 'rotate(360deg)' }
+				},
+				'data-flow': {
+					'0%': { transform: 'translateX(-100%)', opacity: '0' },
+					'50%': { opacity: '1' },
+					'100%': { transform: 'translateX(100%)', opacity: '0' }
+				},
+				'agent-pulse': {
+					'0%, 100%': { transform: 'scale(1)', opacity: '1' },
+					'50%': { transform: 'scale(1.1)', opacity: '0.9' }
+				},
+				'network-pulse': {
+					'0%, 100%': { opacity: '0.3' },
+					'50%': { opacity: '0.8' }
+				},
+				'growth-up': {
+					'0%': { transform: 'translateY(20px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
+				},
+				'highlight': {
+					'0%': { 
+						transform: 'scaleX(0) rotate(-1deg)',
+						opacity: '0.8'
+					},
+					'50%': { 
+						transform: 'scaleX(1) rotate(-1deg)',
+						opacity: '1'
+					},
+					'100%': { 
+						transform: 'scaleX(0) rotate(-1deg)',
+						opacity: '0.8'
+					}
+				},
+				'star-fall': {
+					'0%': { 
+						transform: 'translateY(-10px) translateX(0px)',
+						opacity: '1',
+						scale: '1'
+					},
+					'100%': { 
+						transform: 'translateY(20px) translateX(10px)',
+						opacity: '0',
+						scale: '0.5'
+					}
 				}
 			},
 			animation: {
@@ -111,7 +163,15 @@ export default {
 				'scale-in': 'scale-in 0.4s ease-out',
 				'slide-in-right': 'slide-in-right 0.3s ease-out',
 				'glow': 'glow 2s ease-in-out infinite',
-				'float': 'float 3s ease-in-out infinite'
+				'float': 'float 6s ease-in-out infinite',
+				'pulse-slow': 'pulse-slow 4s ease-in-out infinite',
+				'spin-slow': 'spin-slow 20s linear infinite',
+				'data-flow': 'data-flow 3s ease-in-out infinite',
+				'agent-pulse': 'agent-pulse 2s ease-in-out infinite',
+				'network-pulse': 'network-pulse 2s ease-in-out infinite',
+				'growth-up': 'growth-up 1s ease-out',
+				'highlight': 'highlight 4s ease-in-out infinite',
+				'star-fall': 'star-fall 2s ease-out infinite'
 			}
 		}
 	},
