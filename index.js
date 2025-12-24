@@ -17,16 +17,39 @@ if (!process.env.MONGODB_URI) {
 
 const app = express();
 
-// Configure CORS
-const frontendUrl = process.env.FRONTEND_URL || "http://localhost:8080";
+// Configure CORS for production and development
+const allowedOrigins = [
+  "https://importai.in",
+  "https://www.importai.in",
+  "http://localhost:5173",
+  "http://localhost:8080", // Keep for backward compatibility
+];
+
 const corsOptions = {
-  origin: frontendUrl,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 };
-app.use(cors(corsOptions));
+
+// Middleware order: JSON parser first, then CORS
 app.use(express.json());
+app.use(cors(corsOptions));
+
+// Explicit preflight handler for all routes
+app.options("*", cors(corsOptions));
+
 app.use(cookieParser());
 
 // Health check endpoint
@@ -60,5 +83,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server started successfully`);
   console.log(`✓ Listening on port ${PORT}`);
-  console.log(`✓ CORS enabled for: ${frontendUrl}`);
+  console.log(`✓ CORS enabled for: ${allowedOrigins.join(", ")}`);
 });
