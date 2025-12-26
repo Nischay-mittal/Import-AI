@@ -74,9 +74,8 @@ You can reply directly to this email to contact ${name} at ${email}.
 
     // Send email using Resend API
     try {
-      // Use verified domain or fallback to Resend's test domain
-      // For production, verify importai.in domain in Resend dashboard
-      const fromEmail = process.env.RESEND_FROM_EMAIL || "Import AI <onboarding@resend.dev>";
+      // Use verified domain - team@importai.in
+      const fromEmail = process.env.RESEND_FROM_EMAIL || "Import AI <team@importai.in>";
       
       // Send to primary recipient with CC
       const { data, error } = await resend.emails.send({
