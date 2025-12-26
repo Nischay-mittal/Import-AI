@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const Article = require("../models/Article");
+const User = require("../models/User");
 const auth = require("../middleware/auth");
 
 // Helper function to generate slug from title
@@ -45,7 +46,18 @@ router.get("/", async (req, res) => {
     const query = {};
     
     // If not admin, only show published articles
-    if (!req.user || req.user.role !== 'admin') {
+    let isAdmin = false;
+    if (req.userId) {
+      try {
+        const user = await User.findById(req.userId);
+        isAdmin = user && user.role === 'admin';
+      } catch (err) {
+        // If user lookup fails, treat as non-admin
+        isAdmin = false;
+      }
+    }
+    
+    if (!isAdmin) {
       query.status = 'Published';
       query.publishedAt = { $lte: new Date() };
     } else if (status) {
@@ -103,7 +115,18 @@ router.get("/:slug", async (req, res) => {
     }
     
     // Only show published articles to non-admins
-    if (article.status !== 'Published' && (!req.user || req.user.role !== 'admin')) {
+    let isAdmin = false;
+    if (req.userId) {
+      try {
+        const user = await User.findById(req.userId);
+        isAdmin = user && user.role === 'admin';
+      } catch (err) {
+        // If user lookup fails, treat as non-admin
+        isAdmin = false;
+      }
+    }
+    
+    if (article.status !== 'Published' && !isAdmin) {
       return res.status(404).json({ message: "Article not found" });
     }
     
@@ -121,7 +144,9 @@ router.get("/:slug", async (req, res) => {
 // POST /api/articles - Create new article (admin only)
 router.post("/", auth, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    // Fetch user from database to check role
+    const user = await User.findById(req.userId);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: "Access denied. Admin only." });
     }
     
@@ -180,10 +205,8 @@ router.post("/", auth, async (req, res) => {
     // Calculate SEO score
     articleData.seoScore = calculateSEOScore(articleData);
     
-    // Set createdBy (ensure req.user exists)
-    if (req.user && req.user.id) {
-      articleData.createdBy = req.user.id;
-    }
+    // Set createdBy
+    articleData.createdBy = req.userId;
     
     // Clean up empty arrays and objects
     if (articleData.secondaryKeywords && articleData.secondaryKeywords.length === 0) {
@@ -235,7 +258,9 @@ router.post("/", auth, async (req, res) => {
 // PUT /api/articles/:id - Update article (admin only)
 router.put("/:id", auth, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    // Fetch user from database to check role
+    const user = await User.findById(req.userId);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: "Access denied. Admin only." });
     }
     
@@ -290,7 +315,9 @@ router.put("/:id", auth, async (req, res) => {
 // DELETE /api/articles/:id - Delete article (admin only)
 router.delete("/:id", auth, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    // Fetch user from database to check role
+    const user = await User.findById(req.userId);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: "Access denied. Admin only." });
     }
     
