@@ -23,14 +23,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return localStorage.getItem('user_role');
   });
 
-  // Fetch user info if token exists but userName doesn't
+  // Fetch user info if token exists but userName or role is missing
   useEffect(() => {
     const fetchUserInfo = async () => {
       const storedToken = localStorage.getItem('auth_token');
       const storedUserName = localStorage.getItem('user_name');
       const storedUserRole = localStorage.getItem('user_role');
       
-      if (storedToken && (!storedUserName || !storedUserRole)) {
+      // Always fetch user info if we have a token (to ensure role is up-to-date)
+      if (storedToken) {
         try {
           const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
           const response = await fetch(`${apiUrl}/api/auth/me`, {
@@ -45,10 +46,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUserName(user.name);
               localStorage.setItem('user_name', user.name);
             }
-            if (user.role) {
-              setUserRole(user.role);
-              localStorage.setItem('user_role', user.role);
-            }
+            // Always update role from server to ensure it's current
+            const role = user.role || 'user';
+            setUserRole(role);
+            localStorage.setItem('user_role', role);
+          } else if (response.status === 401) {
+            // Token is invalid, clear everything
+            setToken(null);
+            setUserName(null);
+            setUserRole(null);
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_name');
+            localStorage.removeItem('user_role');
           }
         } catch (error) {
           console.error('Failed to fetch user info:', error);

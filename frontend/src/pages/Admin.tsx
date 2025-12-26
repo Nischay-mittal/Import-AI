@@ -125,9 +125,14 @@ export default function Admin() {
       return;
     }
     if (!isAdmin) {
+      // Debug: Log the current role
+      console.log('Current user role:', userRole);
+      console.log('Is admin?', isAdmin);
+      console.log('Is authenticated?', isAuthenticated);
+      
       toast({
         title: "Access Denied",
-        description: "You don't have permission to access the admin panel.",
+        description: `You don't have permission to access the admin panel. Current role: ${userRole || 'none'}. Please log out and log back in with an admin account.`,
         variant: "destructive",
       });
       navigate('/');
