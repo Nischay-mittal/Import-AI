@@ -25,7 +25,8 @@ import {
   AlertCircle,
   Users,
   Mail,
-  Shield
+  Shield,
+  Code
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getApiUrl } from "@/lib/api";
@@ -117,6 +118,48 @@ export default function Admin() {
   
   // Contact submissions state
   const [contactSubmissions, setContactSubmissions] = useState<any[]>([]);
+  
+  // Projects state
+  const [projects, setProjects] = useState<any[]>([]);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [projectFormData, setProjectFormData] = useState<any>({
+    title: "",
+    slug: "",
+    tagline: "",
+    projectType: "Internal Project",
+    status: "Draft",
+    visibility: "Public",
+    primaryCategory: "",
+    dataTags: [],
+    industryRelevance: "",
+    problemSummary: "",
+    whoFacesProblem: [],
+    whyExistingSolutionsFail: "",
+    solutionSummary: "",
+    workflowSteps: [],
+    showBeforeAfter: false,
+    beforeState: "",
+    afterState: "",
+    architectureDescription: "",
+    architectureDiagram: { url: "", alt: "" },
+    toolsUsed: [],
+    metrics: [],
+    demoType: "",
+    demoUrl: "",
+    videoUrl: "",
+    screenshots: [],
+    githubRepo: { url: "", isPublic: true },
+    metaTitle: "",
+    metaDescription: "",
+    canonicalUrl: "",
+    openGraphImage: { url: "", alt: "" },
+    schemaType: "Project",
+    author: { name: "", bio: "", profileImage: "" },
+    publishedAt: "",
+    featured: false,
+    sortPriority: 0,
+  });
+  
   const [articleFormData, setArticleFormData] = useState<any>({
     title: "",
     slug: "",
@@ -187,6 +230,7 @@ export default function Admin() {
     loadArticles();
     loadUsers();
     loadContactSubmissions();
+    loadProjects();
   }, [authLoading, isAuthenticated, isAdmin, navigate, toast, userRole, token]);
 
   const loadCaseStudies = () => {
@@ -1116,6 +1160,322 @@ The system thinks about each prospect's journey, not just "send message → hope
         variant: "destructive",
       });
     }
+  };
+
+  const loadProjects = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/projects?limit=100`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data.projects || []);
+      } else {
+        const error = await res.json().catch(() => ({ message: "Failed to load projects" }));
+        console.error("Error loading projects:", error);
+      }
+    } catch (error) {
+      console.error("Error loading projects:", error);
+    }
+  };
+
+  const generateProjectSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  const handleProjectTitleChange = (title: string) => {
+    setProjectFormData({
+      ...projectFormData,
+      title,
+      slug: projectFormData.slug || generateProjectSlug(title),
+    });
+  };
+
+  const handleSaveProject = async () => {
+    try {
+      if (!projectFormData.title?.trim()) {
+        toast({
+          title: "Error",
+          description: "Project title is required",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const apiUrl = getApiUrl();
+      const url = editingProjectId 
+        ? `${apiUrl}/api/projects/${editingProjectId}`
+        : `${apiUrl}/api/projects`;
+      
+      const method = editingProjectId ? 'PUT' : 'POST';
+      
+      // Clean up the data before sending
+      const projectData: any = {
+        title: projectFormData.title.trim(),
+        slug: projectFormData.slug.trim() || generateProjectSlug(projectFormData.title),
+      };
+
+      // Add optional fields only if they have values
+      if (projectFormData.tagline?.trim()) projectData.tagline = projectFormData.tagline.trim();
+      if (projectFormData.projectType) projectData.projectType = projectFormData.projectType;
+      if (projectFormData.status) projectData.status = projectFormData.status;
+      if (projectFormData.visibility) projectData.visibility = projectFormData.visibility;
+      if (projectFormData.primaryCategory?.trim()) projectData.primaryCategory = projectFormData.primaryCategory.trim();
+      if (projectFormData.dataTags && projectFormData.dataTags.length > 0) {
+        projectData.dataTags = projectFormData.dataTags.filter((t: string) => t.trim());
+      }
+      if (projectFormData.industryRelevance?.trim()) projectData.industryRelevance = projectFormData.industryRelevance.trim();
+      if (projectFormData.problemSummary?.trim()) projectData.problemSummary = projectFormData.problemSummary.trim();
+      if (projectFormData.whoFacesProblem && projectFormData.whoFacesProblem.length > 0) {
+        projectData.whoFacesProblem = projectFormData.whoFacesProblem.filter((w: string) => w.trim());
+      }
+      if (projectFormData.whyExistingSolutionsFail?.trim()) projectData.whyExistingSolutionsFail = projectFormData.whyExistingSolutionsFail.trim();
+      if (projectFormData.solutionSummary?.trim()) projectData.solutionSummary = projectFormData.solutionSummary.trim();
+      if (projectFormData.workflowSteps && projectFormData.workflowSteps.length > 0) {
+        projectData.workflowSteps = projectFormData.workflowSteps.filter((s: any) => s.title?.trim() && s.description?.trim());
+      }
+      projectData.showBeforeAfter = projectFormData.showBeforeAfter || false;
+      if (projectFormData.beforeState?.trim()) projectData.beforeState = projectFormData.beforeState.trim();
+      if (projectFormData.afterState?.trim()) projectData.afterState = projectFormData.afterState.trim();
+      if (projectFormData.architectureDescription?.trim()) projectData.architectureDescription = projectFormData.architectureDescription.trim();
+      if (projectFormData.architectureDiagram?.url?.trim()) {
+        projectData.architectureDiagram = {
+          url: projectFormData.architectureDiagram.url.trim(),
+          alt: projectFormData.architectureDiagram.alt?.trim() || "",
+        };
+      }
+      if (projectFormData.toolsUsed && projectFormData.toolsUsed.length > 0) {
+        projectData.toolsUsed = projectFormData.toolsUsed.filter((t: string) => t.trim());
+      }
+      if (projectFormData.metrics && projectFormData.metrics.length > 0) {
+        projectData.metrics = projectFormData.metrics.filter((m: any) => m.type && m.value?.trim());
+      }
+      if (projectFormData.demoType) projectData.demoType = projectFormData.demoType;
+      if (projectFormData.demoUrl?.trim()) projectData.demoUrl = projectFormData.demoUrl.trim();
+      if (projectFormData.videoUrl?.trim()) projectData.videoUrl = projectFormData.videoUrl.trim();
+      if (projectFormData.screenshots && projectFormData.screenshots.length > 0) {
+        projectData.screenshots = projectFormData.screenshots.filter((s: any) => s.url?.trim());
+      }
+      if (projectFormData.githubRepo?.url?.trim()) {
+        projectData.githubRepo = {
+          url: projectFormData.githubRepo.url.trim(),
+          isPublic: projectFormData.githubRepo.isPublic || false,
+        };
+      }
+      if (projectFormData.metaTitle?.trim()) projectData.metaTitle = projectFormData.metaTitle.trim();
+      if (projectFormData.metaDescription?.trim()) projectData.metaDescription = projectFormData.metaDescription.trim();
+      if (projectFormData.canonicalUrl?.trim()) projectData.canonicalUrl = projectFormData.canonicalUrl.trim();
+      if (projectFormData.openGraphImage?.url?.trim()) {
+        projectData.openGraphImage = {
+          url: projectFormData.openGraphImage.url.trim(),
+          alt: projectFormData.openGraphImage.alt?.trim() || "",
+        };
+      }
+      if (projectFormData.schemaType) projectData.schemaType = projectFormData.schemaType;
+      if (projectFormData.author?.name?.trim()) {
+        projectData.author = {
+          name: projectFormData.author.name.trim(),
+          bio: projectFormData.author.bio?.trim() || '',
+          profileImage: projectFormData.author.profileImage?.trim() || '',
+        };
+      }
+      if (projectFormData.publishedAt) {
+        projectData.publishedAt = new Date(projectFormData.publishedAt).toISOString();
+      }
+      projectData.featured = projectFormData.featured || false;
+      projectData.sortPriority = projectFormData.sortPriority || 0;
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(projectData),
+      });
+
+      if (response.ok) {
+        await loadProjects();
+        setEditingProjectId(null);
+        setActiveTab("projects-list");
+        toast({
+          title: "Project saved",
+          description: `Project has been ${editingProjectId ? "updated" : "created"} successfully.`,
+        });
+      } else {
+        let errorMessage = "Failed to save project";
+        try {
+          const error = await response.json();
+          if (error.errors && Array.isArray(error.errors)) {
+            errorMessage = error.errors.join(', ');
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+        } catch (parseError) {
+          console.error("Error parsing response:", parseError);
+        }
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save project",
+        variant: "destructive",
+      });
+      console.error("Project save error:", error);
+    }
+  };
+
+  const handleEditProject = (project: any) => {
+    try {
+      setEditingProjectId(project._id);
+      setActiveTab("project-form");
+      setProjectFormData({
+        title: project.title || "",
+        slug: project.slug || "",
+        tagline: project.tagline || "",
+        projectType: project.projectType || "Internal Project",
+        status: project.status || "Draft",
+        visibility: project.visibility || "Public",
+        primaryCategory: project.primaryCategory || "",
+        dataTags: Array.isArray(project.dataTags) ? project.dataTags : [],
+        industryRelevance: project.industryRelevance || "",
+        problemSummary: project.problemSummary || "",
+        whoFacesProblem: Array.isArray(project.whoFacesProblem) ? project.whoFacesProblem : [],
+        whyExistingSolutionsFail: project.whyExistingSolutionsFail || "",
+        solutionSummary: project.solutionSummary || "",
+        workflowSteps: Array.isArray(project.workflowSteps) ? project.workflowSteps : [],
+        showBeforeAfter: project.showBeforeAfter || false,
+        beforeState: project.beforeState || "",
+        afterState: project.afterState || "",
+        architectureDescription: project.architectureDescription || "",
+        architectureDiagram: {
+          url: project.architectureDiagram?.url || "",
+          alt: project.architectureDiagram?.alt || "",
+        },
+        toolsUsed: Array.isArray(project.toolsUsed) ? project.toolsUsed : [],
+        metrics: Array.isArray(project.metrics) ? project.metrics : [],
+        demoType: project.demoType || "",
+        demoUrl: project.demoUrl || "",
+        videoUrl: project.videoUrl || "",
+        screenshots: Array.isArray(project.screenshots) ? project.screenshots : [],
+        githubRepo: {
+          url: project.githubRepo?.url || "",
+          isPublic: project.githubRepo?.isPublic !== undefined ? project.githubRepo.isPublic : true,
+        },
+        metaTitle: project.metaTitle || "",
+        metaDescription: project.metaDescription || "",
+        canonicalUrl: project.canonicalUrl || "",
+        openGraphImage: {
+          url: project.openGraphImage?.url || "",
+          alt: project.openGraphImage?.alt || "",
+        },
+        schemaType: project.schemaType || "Project",
+        author: {
+          name: project.author?.name || "",
+          bio: project.author?.bio || "",
+          profileImage: project.author?.profileImage || "",
+        },
+        publishedAt: project.publishedAt ? new Date(project.publishedAt).toISOString().split('T')[0] : "",
+        featured: project.featured || false,
+        sortPriority: project.sortPriority || 0,
+      });
+    } catch (error) {
+      console.error("Error setting project form data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load project data for editing",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/api/projects/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        await loadProjects();
+        toast({
+          title: "Project deleted",
+          description: "Project has been deleted successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete project",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete project",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNewProject = () => {
+    setEditingProjectId(null);
+    setActiveTab("project-form");
+    setProjectFormData({
+      title: "",
+      slug: "",
+      tagline: "",
+      projectType: "Internal Project",
+      status: "Draft",
+      visibility: "Public",
+      primaryCategory: "",
+      dataTags: [],
+      industryRelevance: "",
+      problemSummary: "",
+      whoFacesProblem: [],
+      whyExistingSolutionsFail: "",
+      solutionSummary: "",
+      workflowSteps: [],
+      showBeforeAfter: false,
+      beforeState: "",
+      afterState: "",
+      architectureDescription: "",
+      architectureDiagram: { url: "", alt: "" },
+      toolsUsed: [],
+      metrics: [],
+      demoType: "",
+      demoUrl: "",
+      videoUrl: "",
+      screenshots: [],
+      githubRepo: { url: "", isPublic: true },
+      metaTitle: "",
+      metaDescription: "",
+      canonicalUrl: "",
+      openGraphImage: { url: "", alt: "" },
+      schemaType: "Project",
+      author: { name: "", bio: "", profileImage: "" },
+      publishedAt: "",
+      featured: false,
+      sortPriority: 0,
+    });
   };
 
   const wordCount = articleFormData.content
@@ -2676,6 +3036,870 @@ The system thinks about each prospect's journey, not just "send message → hope
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Projects List Tab */}
+          <TabsContent value="projects-list">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Projects</CardTitle>
+                    <CardDescription>
+                      {projects.length} project{projects.length !== 1 ? "s" : ""} total
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleNewProject}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Project
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {projects.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Code className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No projects yet. Create your first one!</p>
+                    </div>
+                  ) : (
+                    projects.map((project) => (
+                      <div
+                        key={project._id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold">{project.title}</h3>
+                            {project.featured && (
+                              <Badge variant="default" className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
+                                Featured
+                              </Badge>
+                            )}
+                            <Badge variant={project.status === 'Published' ? 'default' : 'outline'}>
+                              {project.status}
+                            </Badge>
+                            {project.projectType && (
+                              <Badge variant="secondary" className="text-xs">
+                                {project.projectType}
+                              </Badge>
+                            )}
+                          </div>
+                          {project.tagline && (
+                            <p className="text-sm text-muted-foreground mb-1">
+                              {project.tagline}
+                            </p>
+                          )}
+                          <p className="text-sm text-muted-foreground">
+                            Slug: /projects/{project.slug}
+                            {project.sortPriority !== 0 && ` • Priority: ${project.sortPriority}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditProject(project)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteProject(project._id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Project Form Tab */}
+          <TabsContent value="project-form">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>{editingProjectId ? "Edit Project" : "New Project"}</CardTitle>
+                    <Button variant="outline" onClick={() => setActiveTab("projects-list")}>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(); }} className="space-y-6">
+                    {/* Core Content Fields */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">Core Information</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="projectTitle">Project Title (H1) *</Label>
+                        <Input
+                          id="projectTitle"
+                          value={projectFormData.title}
+                          onChange={(e) => handleProjectTitleChange(e.target.value)}
+                          placeholder="Enter project title"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="projectSlug">Slug / URL *</Label>
+                        <Input
+                          id="projectSlug"
+                          value={projectFormData.slug}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, slug: e.target.value })}
+                          placeholder="project-slug"
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          URL: /projects/{projectFormData.slug || 'project-slug'}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="tagline">Short Tagline (1-2 lines)</Label>
+                        <Textarea
+                          id="tagline"
+                          value={projectFormData.tagline}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, tagline: e.target.value })}
+                          placeholder="Brief description of the project"
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="projectType">Project Type</Label>
+                          <Select
+                            value={projectFormData.projectType}
+                            onValueChange={(value) => setProjectFormData({ ...projectFormData, projectType: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Internal Project">Internal Project</SelectItem>
+                              <SelectItem value="R&D Experiment">R&D Experiment</SelectItem>
+                              <SelectItem value="Open-source">Open-source</SelectItem>
+                              <SelectItem value="Demo / Prototype">Demo / Prototype</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="projectStatus">Status</Label>
+                          <Select
+                            value={projectFormData.status}
+                            onValueChange={(value) => setProjectFormData({ ...projectFormData, status: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Draft">Draft</SelectItem>
+                              <SelectItem value="Published">Published</SelectItem>
+                              <SelectItem value="Archived">Archived</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="projectVisibility">Visibility</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Public projects are visible to everyone
+                          </p>
+                        </div>
+                        <Select
+                          value={projectFormData.visibility}
+                          onValueChange={(value) => setProjectFormData({ ...projectFormData, visibility: value })}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Public">Public</SelectItem>
+                            <SelectItem value="Private">Private</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Categorization */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">Categorization & Filters</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="primaryCategory">Primary Category</Label>
+                        <Input
+                          id="primaryCategory"
+                          value={projectFormData.primaryCategory}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, primaryCategory: e.target.value })}
+                          placeholder="e.g., AI Automation, Data Processing"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="dataTags">Data / RAG Tags (comma-separated)</Label>
+                        <Input
+                          id="dataTags"
+                          value={projectFormData.dataTags?.join(', ') || ''}
+                          onChange={(e) => setProjectFormData({ 
+                            ...projectFormData, 
+                            dataTags: e.target.value.split(',').map(t => t.trim()).filter(t => t) 
+                          })}
+                          placeholder="tag1, tag2, tag3"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="industryRelevance">Industry Relevance (Optional)</Label>
+                        <Input
+                          id="industryRelevance"
+                          value={projectFormData.industryRelevance}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, industryRelevance: e.target.value })}
+                          placeholder="e.g., Healthcare, Finance, E-commerce"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Problem Statement */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">Problem Statement</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="problemSummary">Problem Summary</Label>
+                        <Textarea
+                          id="problemSummary"
+                          value={projectFormData.problemSummary}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, problemSummary: e.target.value })}
+                          placeholder="Brief summary of the problem"
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="whoFacesProblem">Who Faces This Problem? (one per line)</Label>
+                        <Textarea
+                          id="whoFacesProblem"
+                          value={projectFormData.whoFacesProblem?.join('\n') || ''}
+                          onChange={(e) => setProjectFormData({ 
+                            ...projectFormData, 
+                            whoFacesProblem: e.target.value.split('\n').filter(w => w.trim()) 
+                          })}
+                          placeholder="Enter each group on a new line"
+                          rows={4}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="whyExistingSolutionsFail">Why Existing Solutions Fail?</Label>
+                        <Textarea
+                          id="whyExistingSolutionsFail"
+                          value={projectFormData.whyExistingSolutionsFail}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, whyExistingSolutionsFail: e.target.value })}
+                          placeholder="Explain why current solutions don't work"
+                          rows={4}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Solution Overview */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">Solution Overview</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="solutionSummary">Solution Summary (Markdown supported)</Label>
+                        <Textarea
+                          id="solutionSummary"
+                          value={projectFormData.solutionSummary}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, solutionSummary: e.target.value })}
+                          placeholder="Describe the solution in detail. Markdown supported."
+                          rows={10}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <Label>Key Workflow Steps</Label>
+                        {projectFormData.workflowSteps?.map((step: any, idx: number) => (
+                          <div key={idx} className="p-4 border rounded-lg space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">Step {idx + 1}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const newSteps = projectFormData.workflowSteps.filter((_: any, i: number) => i !== idx);
+                                  setProjectFormData({ ...projectFormData, workflowSteps: newSteps });
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <Input
+                              placeholder="Step title"
+                              value={step.title || ''}
+                              onChange={(e) => {
+                                const newSteps = [...projectFormData.workflowSteps];
+                                newSteps[idx] = { ...step, title: e.target.value };
+                                setProjectFormData({ ...projectFormData, workflowSteps: newSteps });
+                              }}
+                            />
+                            <Textarea
+                              placeholder="Step description"
+                              value={step.description || ''}
+                              onChange={(e) => {
+                                const newSteps = [...projectFormData.workflowSteps];
+                                newSteps[idx] = { ...step, description: e.target.value };
+                                setProjectFormData({ ...projectFormData, workflowSteps: newSteps });
+                              }}
+                              rows={2}
+                            />
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setProjectFormData({
+                              ...projectFormData,
+                              workflowSteps: [...(projectFormData.workflowSteps || []), { title: "", description: "" }]
+                            });
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Workflow Step
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="showBeforeAfter">Show Before vs After</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Display before/after comparison
+                          </p>
+                        </div>
+                        <Switch
+                          id="showBeforeAfter"
+                          checked={projectFormData.showBeforeAfter}
+                          onCheckedChange={(checked) => setProjectFormData({ ...projectFormData, showBeforeAfter: checked })}
+                        />
+                      </div>
+
+                      {projectFormData.showBeforeAfter && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="beforeState">Before State</Label>
+                            <Textarea
+                              id="beforeState"
+                              value={projectFormData.beforeState}
+                              onChange={(e) => setProjectFormData({ ...projectFormData, beforeState: e.target.value })}
+                              placeholder="Describe the state before"
+                              rows={4}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="afterState">After State</Label>
+                            <Textarea
+                              id="afterState"
+                              value={projectFormData.afterState}
+                              onChange={(e) => setProjectFormData({ ...projectFormData, afterState: e.target.value })}
+                              placeholder="Describe the state after"
+                              rows={4}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* System Architecture */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">System Architecture</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="architectureDescription">Architecture Description (Markdown)</Label>
+                        <Textarea
+                          id="architectureDescription"
+                          value={projectFormData.architectureDescription}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, architectureDescription: e.target.value })}
+                          placeholder="Describe the system architecture. Markdown supported."
+                          rows={10}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="architectureDiagramUrl">Architecture Diagram URL</Label>
+                        <Input
+                          id="architectureDiagramUrl"
+                          value={projectFormData.architectureDiagram?.url || ''}
+                          onChange={(e) => setProjectFormData({ 
+                            ...projectFormData, 
+                            architectureDiagram: { 
+                              url: e.target.value,
+                              alt: projectFormData.architectureDiagram?.alt || ""
+                            } 
+                          })}
+                          placeholder="https://example.com/diagram.png"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Or upload an image file (will be converted to data URL)
+                        </p>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setProjectFormData({ 
+                                  ...projectFormData, 
+                                  architectureDiagram: { 
+                                    url: reader.result as string,
+                                    alt: projectFormData.architectureDiagram?.alt || ""
+                                  } 
+                                });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                        {projectFormData.architectureDiagram?.url && (
+                          <div className="mt-2">
+                            <img 
+                              src={projectFormData.architectureDiagram.url} 
+                              alt="Preview" 
+                              className="w-32 h-32 object-cover rounded-lg border border-border"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="architectureDiagramAlt">Diagram Alt Text</Label>
+                        <Input
+                          id="architectureDiagramAlt"
+                          value={projectFormData.architectureDiagram?.alt || ''}
+                          onChange={(e) => setProjectFormData({ 
+                            ...projectFormData, 
+                            architectureDiagram: { 
+                              url: projectFormData.architectureDiagram?.url || "",
+                              alt: e.target.value
+                            } 
+                          })}
+                          placeholder="Descriptive alt text for accessibility"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="toolsUsed">Tools Used (comma-separated)</Label>
+                        <Input
+                          id="toolsUsed"
+                          value={projectFormData.toolsUsed?.join(', ') || ''}
+                          onChange={(e) => setProjectFormData({ 
+                            ...projectFormData, 
+                            toolsUsed: e.target.value.split(',').map(t => t.trim()).filter(t => t) 
+                          })}
+                          placeholder="Python, React, MongoDB, etc."
+                        />
+                      </div>
+                    </div>
+
+                    {/* Results & Benchmarks */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">Results & Benchmarks</h3>
+                      
+                      {projectFormData.metrics?.map((metric: any, idx: number) => (
+                        <div key={idx} className="p-4 border rounded-lg space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Metric {idx + 1}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newMetrics = projectFormData.metrics.filter((_: any, i: number) => i !== idx);
+                                setProjectFormData({ ...projectFormData, metrics: newMetrics });
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Select
+                              value={metric.type || ''}
+                              onValueChange={(value) => {
+                                const newMetrics = [...projectFormData.metrics];
+                                newMetrics[idx] = { ...metric, type: value };
+                                setProjectFormData({ ...projectFormData, metrics: newMetrics });
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Metric Type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Time Saved">Time Saved</SelectItem>
+                                <SelectItem value="Cost Reduced">Cost Reduced</SelectItem>
+                                <SelectItem value="Speed Improved">Speed Improved</SelectItem>
+                                <SelectItem value="Accuracy Improved">Accuracy Improved</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              placeholder="Value (e.g., 50%, 2x, $10k)"
+                              value={metric.value || ''}
+                              onChange={(e) => {
+                                const newMetrics = [...projectFormData.metrics];
+                                newMetrics[idx] = { ...metric, value: e.target.value };
+                                setProjectFormData({ ...projectFormData, metrics: newMetrics });
+                              }}
+                            />
+                          </div>
+                          <Input
+                            placeholder="Context (e.g., Internal testing / Demo environment)"
+                            value={metric.context || ''}
+                            onChange={(e) => {
+                              const newMetrics = [...projectFormData.metrics];
+                              newMetrics[idx] = { ...metric, context: e.target.value };
+                              setProjectFormData({ ...projectFormData, metrics: newMetrics });
+                            }}
+                          />
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setProjectFormData({
+                            ...projectFormData,
+                            metrics: [...(projectFormData.metrics || []), { type: "", value: "", context: "" }]
+                          });
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Metric
+                      </Button>
+                    </div>
+
+                    {/* Demo & Proof */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">Demo & Proof</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="demoType">Demo Type</Label>
+                        <Select
+                          value={projectFormData.demoType}
+                          onValueChange={(value) => setProjectFormData({ ...projectFormData, demoType: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select demo type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Live URL">Live URL</SelectItem>
+                            <SelectItem value="Video">Video</SelectItem>
+                            <SelectItem value="Screenshots">Screenshots</SelectItem>
+                            <SelectItem value="GitHub Repo">GitHub Repo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {projectFormData.demoType === 'Live URL' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="demoUrl">Demo URL</Label>
+                          <Input
+                            id="demoUrl"
+                            value={projectFormData.demoUrl}
+                            onChange={(e) => setProjectFormData({ ...projectFormData, demoUrl: e.target.value })}
+                            placeholder="https://demo.example.com"
+                          />
+                        </div>
+                      )}
+
+                      {projectFormData.demoType === 'Video' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="videoUrl">Video URL (Loom / YouTube embed URL)</Label>
+                          <Input
+                            id="videoUrl"
+                            value={projectFormData.videoUrl}
+                            onChange={(e) => setProjectFormData({ ...projectFormData, videoUrl: e.target.value })}
+                            placeholder="https://www.loom.com/embed/..."
+                          />
+                        </div>
+                      )}
+
+                      {projectFormData.demoType === 'Screenshots' && (
+                        <div className="space-y-4">
+                          <Label>Screenshots</Label>
+                          {projectFormData.screenshots?.map((screenshot: any, idx: number) => (
+                            <div key={idx} className="p-4 border rounded-lg space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">Screenshot {idx + 1}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newScreenshots = projectFormData.screenshots.filter((_: any, i: number) => i !== idx);
+                                    setProjectFormData({ ...projectFormData, screenshots: newScreenshots });
+                                  }}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <Input
+                                placeholder="Image URL"
+                                value={screenshot.url || ''}
+                                onChange={(e) => {
+                                  const newScreenshots = [...projectFormData.screenshots];
+                                  newScreenshots[idx] = { ...screenshot, url: e.target.value };
+                                  setProjectFormData({ ...projectFormData, screenshots: newScreenshots });
+                                }}
+                              />
+                              <Input
+                                placeholder="Alt text"
+                                value={screenshot.alt || ''}
+                                onChange={(e) => {
+                                  const newScreenshots = [...projectFormData.screenshots];
+                                  newScreenshots[idx] = { ...screenshot, alt: e.target.value };
+                                  setProjectFormData({ ...projectFormData, screenshots: newScreenshots });
+                                }}
+                              />
+                              <Input
+                                placeholder="Caption (optional)"
+                                value={screenshot.caption || ''}
+                                onChange={(e) => {
+                                  const newScreenshots = [...projectFormData.screenshots];
+                                  newScreenshots[idx] = { ...screenshot, caption: e.target.value };
+                                  setProjectFormData({ ...projectFormData, screenshots: newScreenshots });
+                                }}
+                              />
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setProjectFormData({
+                                ...projectFormData,
+                                screenshots: [...(projectFormData.screenshots || []), { url: "", alt: "", caption: "" }]
+                              });
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Screenshot
+                          </Button>
+                        </div>
+                      )}
+
+                      {projectFormData.demoType === 'GitHub Repo' && (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="githubRepoUrl">GitHub Repository URL</Label>
+                            <Input
+                              id="githubRepoUrl"
+                              value={projectFormData.githubRepo?.url || ''}
+                              onChange={(e) => setProjectFormData({ 
+                                ...projectFormData, 
+                                githubRepo: { 
+                                  url: e.target.value,
+                                  isPublic: projectFormData.githubRepo?.isPublic || true
+                                } 
+                              })}
+                              placeholder="https://github.com/username/repo"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <Label htmlFor="githubRepoPublic">Public Repository</Label>
+                            <Switch
+                              id="githubRepoPublic"
+                              checked={projectFormData.githubRepo?.isPublic !== false}
+                              onCheckedChange={(checked) => setProjectFormData({ 
+                                ...projectFormData, 
+                                githubRepo: { 
+                                  url: projectFormData.githubRepo?.url || "",
+                                  isPublic: checked
+                                } 
+                              })}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SEO & Metadata */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">SEO & Metadata</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="projectMetaTitle">
+                          Meta Title
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {projectFormData.metaTitle?.length || 0}/60
+                          </span>
+                        </Label>
+                        <Input
+                          id="projectMetaTitle"
+                          value={projectFormData.metaTitle}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, metaTitle: e.target.value })}
+                          placeholder="SEO title (50-60 characters)"
+                          maxLength={60}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="projectMetaDescription">
+                          Meta Description
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {projectFormData.metaDescription?.length || 0}/160
+                          </span>
+                        </Label>
+                        <Textarea
+                          id="projectMetaDescription"
+                          value={projectFormData.metaDescription}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, metaDescription: e.target.value })}
+                          placeholder="SEO description (140-160 characters)"
+                          rows={3}
+                          maxLength={160}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="canonicalUrl">Canonical URL</Label>
+                        <Input
+                          id="canonicalUrl"
+                          value={projectFormData.canonicalUrl}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, canonicalUrl: e.target.value })}
+                          placeholder="https://importai.in/projects/project-slug"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="openGraphImageUrl">OpenGraph Image URL</Label>
+                        <Input
+                          id="openGraphImageUrl"
+                          value={projectFormData.openGraphImage?.url || ''}
+                          onChange={(e) => setProjectFormData({ 
+                            ...projectFormData, 
+                            openGraphImage: { 
+                              url: e.target.value,
+                              alt: projectFormData.openGraphImage?.alt || ""
+                            } 
+                          })}
+                          placeholder="https://example.com/og-image.png"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="projectSchemaType">Schema Type</Label>
+                        <Select
+                          value={projectFormData.schemaType}
+                          onValueChange={(value) => setProjectFormData({ ...projectFormData, schemaType: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SoftwareApplication">SoftwareApplication</SelectItem>
+                            <SelectItem value="TechArticle">TechArticle</SelectItem>
+                            <SelectItem value="Project">Project</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Author & Publishing */}
+                    <div className="space-y-4 border-b pb-6">
+                      <h3 className="text-lg font-semibold">Author & Publishing</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="authorName">Author Name</Label>
+                          <Input
+                            id="authorName"
+                            value={projectFormData.author?.name || ''}
+                            onChange={(e) => setProjectFormData({ 
+                              ...projectFormData, 
+                              author: { 
+                                name: e.target.value,
+                                bio: projectFormData.author?.bio || "",
+                                profileImage: projectFormData.author?.profileImage || ""
+                              } 
+                            })}
+                            placeholder="Author name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="projectPublishedAt">Publish Date</Label>
+                          <Input
+                            id="projectPublishedAt"
+                            type="date"
+                            value={projectFormData.publishedAt}
+                            onChange={(e) => setProjectFormData({ ...projectFormData, publishedAt: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Admin-Only Controls */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Admin Controls</h3>
+                      
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="projectFeatured">Featured Project</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Featured projects appear first in listings
+                          </p>
+                        </div>
+                        <Switch
+                          id="projectFeatured"
+                          checked={projectFormData.featured || false}
+                          onCheckedChange={(checked) => setProjectFormData({ ...projectFormData, featured: checked })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="sortPriority">Sort Priority</Label>
+                        <Input
+                          id="sortPriority"
+                          type="number"
+                          value={projectFormData.sortPriority}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, sortPriority: parseInt(e.target.value) || 0 })}
+                          placeholder="0"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Higher numbers appear first. Default: 0
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-4 pt-6">
+                      <Button type="button" variant="outline" onClick={() => setActiveTab("projects-list")}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">
+                        <Save className="w-4 h-4 mr-2" />
+                        {editingProjectId ? "Update" : "Create"} Project
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
