@@ -118,18 +118,22 @@ export default function Projects() {
         }
       `}</style>
 
-      <div className="container mx-auto px-6 max-w-7xl relative z-10">
-        {/* Hero Section */}
-        <div className="text-center mb-12 py-16 bg-gradient-hero rounded-lg">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Our Projects
+      {/* Hero Section */}
+      <section className="py-16 bg-gradient-hero min-h-[280px] flex items-center">
+        <div className="container mx-auto px-6 text-center w-full">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <span className="text-white">Our </span><span className="text-gradient">Projects</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Explore our portfolio of AI automation projects, R&D experiments, and open-source contributions.
           </p>
         </div>
+      </section>
 
-        {/* Filters */}
+      {/* Projects Content */}
+      <section className="py-16">
+        <div className="container mx-auto px-6 max-w-7xl relative z-10">
+          {/* Filters */}
         <div className="mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -249,7 +253,8 @@ export default function Projects() {
             })}
           </div>
         )}
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1537,6 +1537,13 @@ The system thinks about each prospect's journey, not just "send message → hope
               <Mail className="w-4 h-4 mr-2" />
               Contact Forms
             </TabsTrigger>
+            <TabsTrigger value="projects-list">
+              <Code className="w-4 h-4 mr-2" />
+              Projects
+            </TabsTrigger>
+            <TabsTrigger value="project-form">
+              {editingProjectId ? "Edit" : "New"} Project
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="list">
