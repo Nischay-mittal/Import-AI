@@ -711,7 +711,8 @@ The system thinks about each prospect's journey, not just "send message → hope
   const loadArticles = async () => {
     try {
       const apiUrl = getApiUrl();
-      const res = await fetch(`${apiUrl}/api/articles`, {
+      // For admin panel, request all articles with a higher limit
+      const res = await fetch(`${apiUrl}/api/articles?limit=100`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -719,6 +720,14 @@ The system thinks about each prospect's journey, not just "send message → hope
       if (res.ok) {
         const data = await res.json();
         setArticles(data.articles || []);
+      } else {
+        const error = await res.json().catch(() => ({ message: "Failed to load articles" }));
+        console.error("Error loading articles:", error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to load articles",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error loading articles:", error);
@@ -756,13 +765,47 @@ The system thinks about each prospect's journey, not just "send message → hope
   };
 
   const handleEditArticle = (article: any) => {
-    setEditingArticleId(article._id);
-    setActiveTab("article-form");
-    setArticleFormData({
-      ...article,
-      publishedAt: article.publishedAt ? new Date(article.publishedAt).toISOString().split('T')[0] : "",
-      scheduledAt: article.scheduledAt ? new Date(article.scheduledAt).toISOString().split('T')[0] : "",
-    });
+    try {
+      setEditingArticleId(article._id);
+      setActiveTab("article-form");
+      
+      // Ensure all fields are properly set with defaults, especially nested objects
+      setArticleFormData({
+        title: article.title || "",
+        slug: article.slug || "",
+        metaTitle: article.metaTitle || "",
+        metaDescription: article.metaDescription || "",
+        content: article.content || "",
+        excerpt: article.excerpt || "",
+        primaryKeyword: article.primaryKeyword || "",
+        secondaryKeywords: Array.isArray(article.secondaryKeywords) ? article.secondaryKeywords : [],
+        searchIntent: article.searchIntent || "Informational",
+        featuredImage: {
+          url: article.featuredImage?.url || "",
+          alt: article.featuredImage?.alt || "",
+          caption: article.featuredImage?.caption || "",
+        },
+        category: article.category || "",
+        tags: Array.isArray(article.tags) ? article.tags : [],
+        status: article.status || "Draft",
+        publishedAt: article.publishedAt ? new Date(article.publishedAt).toISOString().split('T')[0] : "",
+        scheduledAt: article.scheduledAt ? new Date(article.scheduledAt).toISOString().split('T')[0] : "",
+        author: {
+          name: article.author?.name || "",
+          bio: article.author?.bio || "",
+          profileImage: article.author?.profileImage || "",
+        },
+        schemaType: article.schemaType || "Article",
+        faqs: Array.isArray(article.faqs) ? article.faqs : [],
+      });
+    } catch (error) {
+      console.error("Error setting article form data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load article data for editing",
+        variant: "destructive",
+      });
+    }
   };
 
   const generateSlug = (title: string) => {
@@ -2054,10 +2097,52 @@ The system thinks about each prospect's journey, not just "send message → hope
                             value={articleFormData.featuredImage?.url || ''}
                             onChange={(e) => setArticleFormData({ 
                               ...articleFormData, 
-                              featuredImage: { ...articleFormData.featuredImage, url: e.target.value } 
+                              featuredImage: { 
+                                url: e.target.value,
+                                alt: articleFormData.featuredImage?.alt || "",
+                                caption: articleFormData.featuredImage?.caption || ""
+                              } 
                             })}
                             placeholder="https://example.com/image.jpg"
                           />
+                          <p className="text-xs text-muted-foreground">
+                            Or upload an image file (will be converted to data URL)
+                          </p>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setArticleFormData({ 
+                                    ...articleFormData, 
+                                    featuredImage: { 
+                                      url: reader.result as string,
+                                      alt: articleFormData.featuredImage?.alt || "",
+                                      caption: articleFormData.featuredImage?.caption || ""
+                                    } 
+                                  });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="cursor-pointer"
+                          />
+                          {articleFormData.featuredImage?.url && (
+                            <div className="mt-2">
+                              <img 
+                                src={articleFormData.featuredImage.url} 
+                                alt="Preview" 
+                                className="w-32 h-32 object-cover rounded-lg border border-border"
+                                onError={(e) => {
+                                  // Hide image if it fails to load
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -2067,7 +2152,11 @@ The system thinks about each prospect's journey, not just "send message → hope
                             value={articleFormData.featuredImage?.alt || ''}
                             onChange={(e) => setArticleFormData({ 
                               ...articleFormData, 
-                              featuredImage: { ...articleFormData.featuredImage, alt: e.target.value } 
+                              featuredImage: { 
+                                url: articleFormData.featuredImage?.url || "",
+                                alt: e.target.value,
+                                caption: articleFormData.featuredImage?.caption || ""
+                              } 
                             })}
                             placeholder="Descriptive alt text for accessibility"
                             required
@@ -2081,7 +2170,11 @@ The system thinks about each prospect's journey, not just "send message → hope
                             value={articleFormData.featuredImage?.caption || ''}
                             onChange={(e) => setArticleFormData({ 
                               ...articleFormData, 
-                              featuredImage: { ...articleFormData.featuredImage, caption: e.target.value } 
+                              featuredImage: { 
+                                url: articleFormData.featuredImage?.url || "",
+                                alt: articleFormData.featuredImage?.alt || "",
+                                caption: e.target.value
+                              } 
                             })}
                             placeholder="Optional image caption"
                           />
@@ -2127,7 +2220,11 @@ The system thinks about each prospect's journey, not just "send message → hope
                             value={articleFormData.author?.name || ''}
                             onChange={(e) => setArticleFormData({ 
                               ...articleFormData, 
-                              author: { ...articleFormData.author, name: e.target.value } 
+                              author: { 
+                                name: e.target.value,
+                                bio: articleFormData.author?.bio || "",
+                                profileImage: articleFormData.author?.profileImage || ""
+                              } 
                             })}
                             placeholder="Author name"
                           />

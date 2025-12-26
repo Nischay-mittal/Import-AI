@@ -45,18 +45,26 @@ router.get("/", async (req, res) => {
     const { status, category, tag, search, page = 1, limit = 10 } = req.query;
     const query = {};
     
-    // If not admin, only show published articles
+    // Check if user is admin (optional auth - don't fail if no token)
     let isAdmin = false;
-    if (req.userId) {
+    const header = req.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : req.cookies?.token;
+    
+    if (token) {
       try {
-        const user = await User.findById(req.userId);
-        isAdmin = user && user.role === 'admin';
+        const jwt = require("jsonwebtoken");
+        if (process.env.JWT_SECRET) {
+          const payload = jwt.verify(token, process.env.JWT_SECRET);
+          const user = await User.findById(payload.id);
+          isAdmin = user && user.role === 'admin';
+        }
       } catch (err) {
-        // If user lookup fails, treat as non-admin
+        // Token invalid or user not found - treat as non-admin
         isAdmin = false;
       }
     }
     
+    // If not admin, only show published articles
     if (!isAdmin) {
       query.status = 'Published';
       query.publishedAt = { $lte: new Date() };
@@ -82,8 +90,13 @@ router.get("/", async (req, res) => {
     
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
+    // For admin, sort by updatedAt (most recent first), for public sort by publishedAt
+    const sortOrder = isAdmin 
+      ? { updatedAt: -1, createdAt: -1 }
+      : { publishedAt: -1, createdAt: -1 };
+    
     const articles = await Article.find(query)
-      .sort({ publishedAt: -1, createdAt: -1 })
+      .sort(sortOrder)
       .skip(skip)
       .limit(parseInt(limit))
       .select('-content'); // Don't send full content in list
