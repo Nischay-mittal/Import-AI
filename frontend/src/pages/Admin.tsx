@@ -93,8 +93,13 @@ export default function Admin() {
   });
 
   useEffect(() => {
+    // Check authentication
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     loadCaseStudies();
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   const loadCaseStudies = () => {
     const stored = localStorage.getItem(STORAGE_KEY);

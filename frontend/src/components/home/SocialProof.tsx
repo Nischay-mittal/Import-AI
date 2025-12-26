@@ -1,7 +1,11 @@
-import { useMemo } from "react";
-import { Star, Quote } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function SocialProof() {
+  const [visibleIndex, setVisibleIndex] = useState(0);
+  const autoPlayIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+
   // Generate stars once - more prominent
   const stars = useMemo(() => {
     return Array.from({ length: 60 }, (_, i) => ({
@@ -41,6 +45,46 @@ export function SocialProof() {
   const logos = [
     "Microsoft", "Salesforce", "HubSpot", "Stripe", "Zapier", "Slack"
   ];
+
+  // Auto-play functionality - loops continuously
+  useEffect(() => {
+    if (testimonials.length === 0) return;
+
+    // Clear any existing interval
+    if (autoPlayIntervalRef.current) {
+      clearInterval(autoPlayIntervalRef.current);
+    }
+
+    // If paused, don't start the interval
+    if (isPaused) {
+      return;
+    }
+
+    // Start auto-play
+    autoPlayIntervalRef.current = setInterval(() => {
+      setVisibleIndex((prev) => (prev + 1) % testimonials.length);
+    }, 3000); // Change every 3 seconds
+
+    return () => {
+      if (autoPlayIntervalRef.current) {
+        clearInterval(autoPlayIntervalRef.current);
+      }
+    };
+  }, [testimonials.length, isPaused]);
+
+  const goToPrevious = () => {
+    setVisibleIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
+    setIsPaused(true);
+    // Resume after 5 seconds
+    setTimeout(() => setIsPaused(false), 5000);
+  };
+
+  const goToNext = () => {
+    setVisibleIndex((prev) => (prev + 1) % testimonials.length);
+    setIsPaused(true);
+    // Resume after 5 seconds
+    setTimeout(() => setIsPaused(false), 5000);
+  };
 
   return (
     <section className="py-12 md:py-16 bg-background relative overflow-hidden">
@@ -124,43 +168,84 @@ export function SocialProof() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-          {testimonials.map((testimonial, index) => (
-            <div 
-              key={index}
-              className="group relative bg-gradient-to-br from-muted/30 via-muted/20 to-muted/10 rounded-xl p-6 border border-border/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02] overflow-hidden"
-            >
-              {/* Animated gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-              
-              {/* Glow effect */}
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500 -z-10"></div>
-              
-              <div className="relative z-10">
-                {/* Stars */}
-                <div className="flex space-x-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
+        {/* Quote Display - Single testimonial at a time */}
+        <div className="relative mb-16" style={{ minHeight: '280px' }}>
+          {/* Navigation Arrows */}
+          <button
+            onClick={goToPrevious}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 hover:bg-background border border-border rounded-full p-2 transition-all duration-300 hover:scale-110 hover:shadow-lg"
+            aria-label="Previous testimonial"
+          >
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <button
+            onClick={goToNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 hover:bg-background border border-border rounded-full p-2 transition-all duration-300 hover:scale-110 hover:shadow-lg"
+            aria-label="Next testimonial"
+          >
+            <ChevronRight className="w-5 h-5 text-foreground" />
+          </button>
 
-                {/* Quote */}
-                <div className="relative mb-5">
-                  <Quote className="absolute -top-1 -left-1 w-6 h-6 text-primary/20" />
-                  <p className="text-sm text-muted-foreground leading-relaxed pl-5">
-                    "{testimonial.quote}"
-                  </p>
-                </div>
+          {testimonials.map((testimonial, index) => {
+            const isVisible = index === visibleIndex;
+            
+            return (
+              <div
+                key={index}
+                className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                  isVisible
+                    ? "opacity-100 translate-y-0 scale-100 z-10"
+                    : "opacity-0 translate-y-8 scale-95 z-0 pointer-events-none"
+                }`}
+              >
+                <div className="max-w-3xl mx-auto text-center px-8">
+                  {/* Quote Icon */}
+                  <Quote className="w-12 h-12 text-primary/20 mx-auto mb-6" />
+                  
+                  {/* Quote Text */}
+                  <blockquote className="text-lg md:text-xl text-foreground/90 leading-relaxed mb-8 font-medium italic relative">
+                    <span className="absolute -left-4 -top-2 text-5xl md:text-6xl text-primary/20 leading-none font-serif">"</span>
+                    <span className="relative z-10">{testimonial.quote}</span>
+                    <span className="absolute -right-4 -bottom-4 text-5xl md:text-6xl text-primary/20 leading-none font-serif">"</span>
+                  </blockquote>
 
-                {/* Author */}
-                <div className="border-t border-border/50 pt-4">
-                  <div className="text-sm font-semibold mb-1">{testimonial.author}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {testimonial.role} at {testimonial.company}
+                  {/* Stars */}
+                  <div className="flex justify-center space-x-1 mb-6">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+
+                  {/* Author Info */}
+                  <div>
+                    <div className="text-base font-semibold mb-1">{testimonial.author}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {testimonial.role} at {testimonial.company}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            );
+          })}
+        </div>
+
+        {/* Progress Indicators */}
+        <div className="flex justify-center space-x-2 mb-16">
+          {testimonials.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setVisibleIndex(index);
+                setIsPaused(true);
+                setTimeout(() => setIsPaused(false), 5000);
+              }}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                index === visibleIndex
+                  ? "w-8 bg-primary"
+                  : "w-2 bg-border hover:bg-primary/50"
+              }`}
+              aria-label={`Go to testimonial ${index + 1}`}
+            />
           ))}
         </div>
 
