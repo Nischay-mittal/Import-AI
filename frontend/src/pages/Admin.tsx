@@ -111,6 +111,12 @@ export default function Admin() {
   // Articles state
   const [articles, setArticles] = useState<any[]>([]);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  
+  // Users state
+  const [users, setUsers] = useState<any[]>([]);
+  
+  // Contact submissions state
+  const [contactSubmissions, setContactSubmissions] = useState<any[]>([]);
   const [articleFormData, setArticleFormData] = useState<any>({
     title: "",
     slug: "",
