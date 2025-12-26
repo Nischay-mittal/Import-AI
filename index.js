@@ -72,6 +72,7 @@ mongoose
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/contact", require("./routes/contact"));
 app.use("/api/reviews", require("./routes/reviews"));
+app.use("/api/articles", require("./routes/articles"));
 
 // Simple redirect to open the Demos page from the backend
 app.get("/go/demos", (req, res) => {

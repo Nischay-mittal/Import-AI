@@ -19,8 +19,13 @@ import {
   FileText,
   ArrowLeft,
   Star,
-  MessageSquare
+  MessageSquare,
+  BookOpen,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getApiUrl } from "@/lib/api";
 
 interface CaseStudy {
   id: string;
@@ -81,7 +86,7 @@ interface Review {
 
 export default function Admin() {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, token } = useAuth();
+  const { isAuthenticated, isAdmin, userRole, token } = useAuth();
   const { toast } = useToast();
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -98,6 +103,30 @@ export default function Admin() {
     rating: 5,
     featured: false,
     order: 0
+  });
+
+  // Articles state
+  const [articles, setArticles] = useState<any[]>([]);
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [articleFormData, setArticleFormData] = useState<any>({
+    title: "",
+    slug: "",
+    metaTitle: "",
+    metaDescription: "",
+    content: "",
+    excerpt: "",
+    primaryKeyword: "",
+    secondaryKeywords: [],
+    searchIntent: "Informational",
+    featuredImage: { url: "", alt: "", caption: "" },
+    category: "",
+    tags: [],
+    status: "Draft",
+    publishedAt: "",
+    scheduledAt: "",
+    author: { name: "", bio: "", profileImage: "" },
+    schemaType: "Article",
+    faqs: [],
   });
   const [formData, setFormData] = useState<Partial<CaseStudy>>({
     problem: { title: "The Problem", content: "" },
@@ -140,6 +169,7 @@ export default function Admin() {
     }
     loadCaseStudies();
     loadReviews();
+    loadArticles();
   }, [isAuthenticated, isAdmin, navigate, toast]);
 
   const loadCaseStudies = () => {
@@ -677,6 +707,186 @@ The system thinks about each prospect's journey, not just "send message → hope
     }
   };
 
+  // Article management functions
+  const loadArticles = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/articles`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setArticles(data.articles || []);
+      }
+    } catch (error) {
+      console.error("Error loading articles:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load articles",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNewArticle = () => {
+    setEditingArticleId(null);
+    setActiveTab("article-form");
+    setArticleFormData({
+      title: "",
+      slug: "",
+      metaTitle: "",
+      metaDescription: "",
+      content: "",
+      excerpt: "",
+      primaryKeyword: "",
+      secondaryKeywords: [],
+      searchIntent: "Informational",
+      featuredImage: { url: "", alt: "", caption: "" },
+      category: "",
+      tags: [],
+      status: "Draft",
+      publishedAt: "",
+      scheduledAt: "",
+      author: { name: "", bio: "", profileImage: "" },
+      schemaType: "Article",
+      faqs: [],
+    });
+  };
+
+  const handleEditArticle = (article: any) => {
+    setEditingArticleId(article._id);
+    setActiveTab("article-form");
+    setArticleFormData({
+      ...article,
+      publishedAt: article.publishedAt ? new Date(article.publishedAt).toISOString().split('T')[0] : "",
+      scheduledAt: article.scheduledAt ? new Date(article.scheduledAt).toISOString().split('T')[0] : "",
+    });
+  };
+
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  const handleArticleTitleChange = (title: string) => {
+    setArticleFormData(prev => ({
+      ...prev,
+      title,
+      slug: prev.slug || generateSlug(title),
+      metaTitle: prev.metaTitle || title.substring(0, 60),
+    }));
+  };
+
+  const calculateSEO = () => {
+    const checks: any = {
+      hasMetaTitle: articleFormData.metaTitle && articleFormData.metaTitle.length >= 50 && articleFormData.metaTitle.length <= 60,
+      hasMetaDescription: articleFormData.metaDescription && articleFormData.metaDescription.length >= 140 && articleFormData.metaDescription.length <= 160,
+      hasPrimaryKeyword: !!articleFormData.primaryKeyword,
+      hasH1: articleFormData.content.includes('# ') || articleFormData.content.includes('<h1>'),
+      hasH2: articleFormData.content.includes('## ') || articleFormData.content.includes('<h2>'),
+      hasFeaturedImage: !!articleFormData.featuredImage?.url,
+      hasAltText: !!articleFormData.featuredImage?.alt,
+    };
+    return Object.values(checks).filter(Boolean).length * 10;
+  };
+
+  const handleSaveArticle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const apiUrl = getApiUrl();
+      const url = editingArticleId 
+        ? `${apiUrl}/api/articles/${editingArticleId}`
+        : `${apiUrl}/api/articles`;
+      
+      const method = editingArticleId ? 'PUT' : 'POST';
+      
+      const articleData = {
+        ...articleFormData,
+        publishedAt: articleFormData.publishedAt ? new Date(articleFormData.publishedAt).toISOString() : undefined,
+        scheduledAt: articleFormData.scheduledAt ? new Date(articleFormData.scheduledAt).toISOString() : undefined,
+      };
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(articleData)
+      });
+
+      if (response.ok) {
+        const savedArticle = await response.json();
+        await loadArticles();
+        setEditingArticleId(null);
+        setActiveTab("articles-list");
+        toast({
+          title: "Article saved",
+          description: `Article has been ${editingArticleId ? "updated" : "created"} successfully.`,
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Failed to save article",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save article",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this article?")) return;
+    
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/api/articles/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        await loadArticles();
+        toast({
+          title: "Article deleted",
+          description: "Article has been deleted successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete article",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete article",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const wordCount = articleFormData.content
+    ? articleFormData.content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().split(' ').filter(w => w.length > 0).length
+    : 0;
+  const readingTime = Math.ceil(wordCount / 200);
+  const seoScore = calculateSEO();
+
   return (
     <div className="pt-24 pb-16 min-h-screen">
       <div className="container mx-auto px-6 max-w-7xl">
@@ -702,6 +912,13 @@ The system thinks about each prospect's journey, not just "send message → hope
             </TabsTrigger>
             <TabsTrigger value="review-form">
               {editingReviewId ? "Edit" : "New"} Review
+            </TabsTrigger>
+            <TabsTrigger value="articles-list">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Articles
+            </TabsTrigger>
+            <TabsTrigger value="article-form">
+              {editingArticleId ? "Edit" : "New"} Article
             </TabsTrigger>
           </TabsList>
 
@@ -1494,6 +1711,486 @@ The system thinks about each prospect's journey, not just "send message → hope
                 </form>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Articles List Tab */}
+          <TabsContent value="articles-list">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Articles</CardTitle>
+                    <CardDescription>
+                      {articles.length} article{articles.length !== 1 ? "s" : ""} total
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleNewArticle}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Article
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {articles.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No articles yet. Create your first one!</p>
+                    </div>
+                  ) : (
+                    articles.map((article) => (
+                      <div
+                        key={article._id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold">{article.title}</h3>
+                            <Badge variant={article.status === 'Published' ? 'default' : 'outline'}>
+                              {article.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Slug: /articles/{article.slug} • {article.views || 0} views
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditArticle(article)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteArticle(article._id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Article Form Tab */}
+          <TabsContent value="article-form">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Form */}
+              <div className="lg:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{editingArticleId ? "Edit Article" : "New Article"}</CardTitle>
+                    <CardDescription>
+                      {editingArticleId ? "Update article details" : "Create a new article"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleSaveArticle} className="space-y-6">
+                      {/* Core Content Fields */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Core Content</h3>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="title">
+                            Article Title (H1) *
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {articleFormData.title.length}/60
+                            </span>
+                          </Label>
+                          <Input
+                            id="title"
+                            value={articleFormData.title}
+                            onChange={(e) => handleArticleTitleChange(e.target.value)}
+                            placeholder="Enter article title..."
+                            maxLength={60}
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="slug">Slug / URL *</Label>
+                          <Input
+                            id="slug"
+                            value={articleFormData.slug}
+                            onChange={(e) => setArticleFormData({ ...articleFormData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+                            placeholder="article-slug"
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            URL: /articles/{articleFormData.slug || 'article-slug'}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="excerpt">Excerpt</Label>
+                          <Textarea
+                            id="excerpt"
+                            value={articleFormData.excerpt}
+                            onChange={(e) => setArticleFormData({ ...articleFormData, excerpt: e.target.value })}
+                            placeholder="Short excerpt for listing pages..."
+                            rows={3}
+                            maxLength={300}
+                          />
+                        </div>
+                      </div>
+
+                      {/* SEO Meta Fields */}
+                      <div className="space-y-4 border-t pt-4">
+                        <h3 className="text-lg font-semibold">SEO Meta</h3>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="metaTitle">
+                            Meta Title
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {articleFormData.metaTitle?.length || 0}/60
+                            </span>
+                          </Label>
+                          <Input
+                            id="metaTitle"
+                            value={articleFormData.metaTitle}
+                            onChange={(e) => setArticleFormData({ ...articleFormData, metaTitle: e.target.value })}
+                            placeholder="SEO title (50-60 characters)"
+                            maxLength={60}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="metaDescription">
+                            Meta Description
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {articleFormData.metaDescription?.length || 0}/160
+                            </span>
+                          </Label>
+                          <Textarea
+                            id="metaDescription"
+                            value={articleFormData.metaDescription}
+                            onChange={(e) => setArticleFormData({ ...articleFormData, metaDescription: e.target.value })}
+                            placeholder="SEO description (140-160 characters)"
+                            rows={3}
+                            maxLength={160}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Keyword Management */}
+                      <div className="space-y-4 border-t pt-4">
+                        <h3 className="text-lg font-semibold">Keywords</h3>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="primaryKeyword">Primary Keyword</Label>
+                          <Input
+                            id="primaryKeyword"
+                            value={articleFormData.primaryKeyword}
+                            onChange={(e) => setArticleFormData({ ...articleFormData, primaryKeyword: e.target.value })}
+                            placeholder="Main keyword for this article"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="secondaryKeywords">Secondary Keywords (comma-separated)</Label>
+                          <Input
+                            id="secondaryKeywords"
+                            value={articleFormData.secondaryKeywords?.join(', ') || ''}
+                            onChange={(e) => setArticleFormData({ 
+                              ...articleFormData, 
+                              secondaryKeywords: e.target.value.split(',').map(k => k.trim()).filter(k => k) 
+                            })}
+                            placeholder="keyword1, keyword2, keyword3"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="searchIntent">Search Intent</Label>
+                          <Select
+                            value={articleFormData.searchIntent}
+                            onValueChange={(value) => setArticleFormData({ ...articleFormData, searchIntent: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Informational">Informational</SelectItem>
+                              <SelectItem value="Commercial">Commercial</SelectItem>
+                              <SelectItem value="Transactional">Transactional</SelectItem>
+                              <SelectItem value="Navigational">Navigational</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Content Editor */}
+                      <div className="space-y-4 border-t pt-4">
+                        <h3 className="text-lg font-semibold">Content</h3>
+                        <div className="space-y-2">
+                          <Label htmlFor="content">Main Content (Markdown supported) *</Label>
+                          <Textarea
+                            id="content"
+                            value={articleFormData.content}
+                            onChange={(e) => setArticleFormData({ ...articleFormData, content: e.target.value })}
+                            placeholder="Write your article content here. Supports Markdown: # H1, ## H2, **bold**, *italic*, [links](url), etc."
+                            rows={20}
+                            required
+                            className="font-mono text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Word count: {wordCount} • Reading time: ~{readingTime} min
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Featured Image */}
+                      <div className="space-y-4 border-t pt-4">
+                        <h3 className="text-lg font-semibold">Featured Image</h3>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="featuredImageUrl">Image URL</Label>
+                          <Input
+                            id="featuredImageUrl"
+                            value={articleFormData.featuredImage?.url || ''}
+                            onChange={(e) => setArticleFormData({ 
+                              ...articleFormData, 
+                              featuredImage: { ...articleFormData.featuredImage, url: e.target.value } 
+                            })}
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="featuredImageAlt">Alt Text *</Label>
+                          <Input
+                            id="featuredImageAlt"
+                            value={articleFormData.featuredImage?.alt || ''}
+                            onChange={(e) => setArticleFormData({ 
+                              ...articleFormData, 
+                              featuredImage: { ...articleFormData.featuredImage, alt: e.target.value } 
+                            })}
+                            placeholder="Descriptive alt text for accessibility"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="featuredImageCaption">Caption</Label>
+                          <Input
+                            id="featuredImageCaption"
+                            value={articleFormData.featuredImage?.caption || ''}
+                            onChange={(e) => setArticleFormData({ 
+                              ...articleFormData, 
+                              featuredImage: { ...articleFormData.featuredImage, caption: e.target.value } 
+                            })}
+                            placeholder="Optional image caption"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Category & Tags */}
+                      <div className="space-y-4 border-t pt-4">
+                        <h3 className="text-lg font-semibold">Organization</h3>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="category">Category</Label>
+                          <Input
+                            id="category"
+                            value={articleFormData.category}
+                            onChange={(e) => setArticleFormData({ ...articleFormData, category: e.target.value })}
+                            placeholder="e.g., AI Automation, Business"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="tags">Tags (comma-separated)</Label>
+                          <Input
+                            id="tags"
+                            value={articleFormData.tags?.join(', ') || ''}
+                            onChange={(e) => setArticleFormData({ 
+                              ...articleFormData, 
+                              tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) 
+                            })}
+                            placeholder="tag1, tag2, tag3"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Author */}
+                      <div className="space-y-4 border-t pt-4">
+                        <h3 className="text-lg font-semibold">Author</h3>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="authorName">Author Name</Label>
+                          <Input
+                            id="authorName"
+                            value={articleFormData.author?.name || ''}
+                            onChange={(e) => setArticleFormData({ 
+                              ...articleFormData, 
+                              author: { ...articleFormData.author, name: e.target.value } 
+                            })}
+                            placeholder="Author name"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Publishing */}
+                      <div className="space-y-4 border-t pt-4">
+                        <h3 className="text-lg font-semibold">Publishing</h3>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="status">Status</Label>
+                          <Select
+                            value={articleFormData.status}
+                            onValueChange={(value) => setArticleFormData({ ...articleFormData, status: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Draft">Draft</SelectItem>
+                              <SelectItem value="Review">Review</SelectItem>
+                              <SelectItem value="Scheduled">Scheduled</SelectItem>
+                              <SelectItem value="Published">Published</SelectItem>
+                              <SelectItem value="Archived">Archived</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="publishedAt">Publish Date</Label>
+                          <Input
+                            id="publishedAt"
+                            type="date"
+                            value={articleFormData.publishedAt}
+                            onChange={(e) => setArticleFormData({ ...articleFormData, publishedAt: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="schemaType">Schema Type</Label>
+                          <Select
+                            value={articleFormData.schemaType}
+                            onValueChange={(value) => setArticleFormData({ ...articleFormData, schemaType: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Article">Article</SelectItem>
+                              <SelectItem value="BlogPosting">BlogPosting</SelectItem>
+                              <SelectItem value="FAQ">FAQ</SelectItem>
+                              <SelectItem value="HowTo">HowTo</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 pt-4 border-t">
+                        <Button type="submit">
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Article
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingArticleId(null);
+                            setActiveTab("articles-list");
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* SEO Score Panel */}
+              <div className="lg:col-span-1">
+                <Card className="sticky top-24">
+                  <CardHeader>
+                    <CardTitle>SEO Score</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold mb-2">{seoScore}/100</div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{ width: `${seoScore}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        {articleFormData.metaTitle && articleFormData.metaTitle.length >= 50 && articleFormData.metaTitle.length <= 60 ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                        <span>Meta Title (50-60 chars)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {articleFormData.metaDescription && articleFormData.metaDescription.length >= 140 && articleFormData.metaDescription.length <= 160 ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                        <span>Meta Description (140-160 chars)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {articleFormData.primaryKeyword ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                        <span>Primary Keyword</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {(articleFormData.content.includes('## ') || articleFormData.content.includes('<h2>')) ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                        <span>Has H2 Headings</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {articleFormData.featuredImage?.url ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                        <span>Featured Image</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {articleFormData.featuredImage?.alt ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                        <span>Image Alt Text</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Word Count:</span>
+                        <span className="font-medium">{wordCount}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Reading Time:</span>
+                        <span className="font-medium">~{readingTime} min</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
