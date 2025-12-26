@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getApiUrl } from '@/lib/api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Always fetch user info if we have a token (to ensure role is up-to-date)
       if (storedToken) {
         try {
-          const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+          const apiUrl = getApiUrl();
           const response = await fetch(`${apiUrl}/api/auth/me`, {
             headers: {
               'Authorization': `Bearer ${storedToken}`,

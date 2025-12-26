@@ -91,6 +91,7 @@ export default function Admin() {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin, userRole, token } = useAuth();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("list");
@@ -152,30 +153,40 @@ export default function Admin() {
   });
 
   useEffect(() => {
-    // Check authentication and admin role
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    if (!isAdmin) {
-      // Debug: Log the current role
-      console.log('Current user role:', userRole);
-      console.log('Is admin?', isAdmin);
-      console.log('Is authenticated?', isAuthenticated);
+    // Wait a bit for AuthContext to finish loading user info
+    const checkAuth = async () => {
+      // Give AuthContext time to fetch user info from server
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      toast({
-        title: "Access Denied",
-        description: `You don't have permission to access the admin panel. Current role: ${userRole || 'none'}. Please log out and log back in with an admin account.`,
-        variant: "destructive",
-      });
-      navigate('/');
-      return;
-    }
-    loadCaseStudies();
-    loadReviews();
-    loadArticles();
-    loadUsers();
-    loadContactSubmissions();
+      setLoading(false);
+      
+      // Check authentication and admin role
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+      if (!isAdmin) {
+        // Debug: Log the current role
+        console.log('Current user role:', userRole);
+        console.log('Is admin?', isAdmin);
+        console.log('Is authenticated?', isAuthenticated);
+        
+        toast({
+          title: "Access Denied",
+          description: `You don't have permission to access the admin panel. Current role: ${userRole || 'none'}. Please log out and log back in with an admin account.`,
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+      loadCaseStudies();
+      loadReviews();
+      loadArticles();
+      loadUsers();
+      loadContactSubmissions();
+    };
+    
+    checkAuth();
   }, [isAuthenticated, isAdmin, navigate, toast, userRole, token]);
 
   const loadCaseStudies = () => {
@@ -1112,6 +1123,18 @@ The system thinks about each prospect's journey, not just "send message → hope
     : 0;
   const readingTime = Math.ceil(wordCount / 200);
   const seoScore = calculateSEO();
+
+  if (loading) {
+    return (
+      <div className="pt-24 pb-16 min-h-screen">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="text-center py-20">
+            <div className="text-muted-foreground">Loading admin panel...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-24 pb-16 min-h-screen">
