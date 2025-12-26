@@ -4,15 +4,28 @@ const nodemailer = require("nodemailer");
 
 // Create reusable transporter object using SMTP transport
 const createTransporter = () => {
-  // For Gmail, you can use OAuth2 or App Password
-  // For now, using a simple SMTP configuration
-  // You'll need to set these in your .env file
+  // Validate email credentials
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    throw new Error("Email credentials not configured. EMAIL_USER and EMAIL_PASSWORD must be set.");
+  }
+
+  // For Gmail/Google Workspace, try port 465 (SSL) first, fallback to 587 (STARTTLS)
+  // Port 465 with SSL is more reliable and often works better with cloud providers
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // true for 465, false for other ports
     auth: {
-      user: process.env.EMAIL_USER, // Your Gmail address
-      pass: process.env.EMAIL_PASSWORD, // Your Gmail App Password
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
     },
+    connectionTimeout: 20000, // 20 seconds
+    greetingTimeout: 20000, // 20 seconds
+    socketTimeout: 20000, // 20 seconds
+    tls: {
+      // Do not fail on invalid certs
+      rejectUnauthorized: false
+    }
   });
 };
 
@@ -29,8 +42,30 @@ router.post("/submit", async (req, res) => {
       });
     }
 
+    // Check if email credentials are configured
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error("Email configuration missing:", {
+        EMAIL_USER: process.env.EMAIL_USER ? "Set" : "Missing",
+        EMAIL_PASSWORD: process.env.EMAIL_PASSWORD ? "Set" : "Missing",
+      });
+      return res.status(500).json({
+        success: false,
+        message: "Email service not configured. Please contact the administrator.",
+      });
+    }
+
     // Create transporter
-    const transporter = createTransporter();
+    let transporter;
+    try {
+      transporter = createTransporter();
+      console.log("Email transporter created for:", process.env.EMAIL_USER);
+    } catch (transporterError) {
+      console.error("Failed to create email transporter:", transporterError);
+      return res.status(500).json({
+        success: false,
+        message: "Email service configuration error. Please try again later.",
+      });
+    }
 
     // Email content
     const mailOptions = {
@@ -82,18 +117,43 @@ You can reply directly to this email to contact ${name} at ${email}.
       `,
     };
 
-    // Send email
-    await transporter.sendMail(mailOptions);
-
-    res.json({
-      success: true,
-      message: "Thank you! We'll get back to you within 24 hours.",
-    });
+    // Send email with timeout
+    const emailPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Email sending timed out after 30 seconds")), 30000)
+    );
+    
+    try {
+      const info = await Promise.race([emailPromise, timeoutPromise]);
+      console.log("Email sent successfully:", info.messageId);
+      
+      res.json({
+        success: true,
+        message: "Thank you! We'll get back to you within 24 hours.",
+      });
+    } catch (emailError) {
+      console.error("Email sending failed:", emailError);
+      console.error("Error code:", emailError.code);
+      console.error("Error response:", emailError.response);
+      throw emailError; // Re-throw to be caught by outer catch
+    }
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Error in contact form submission:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      emailUser: process.env.EMAIL_USER ? "Set" : "Missing",
+      emailPassword: process.env.EMAIL_PASSWORD ? "Set" : "Missing",
+    });
+    
+    // Provide more specific error message for debugging (in production, you might want to hide this)
+    const errorMessage = process.env.NODE_ENV === "production" 
+      ? "Failed to send message. Please try again later."
+      : `Failed to send message: ${error.message}`;
+    
     res.status(500).json({
       success: false,
-      message: "Failed to send message. Please try again later.",
+      message: errorMessage,
     });
   }
 });
