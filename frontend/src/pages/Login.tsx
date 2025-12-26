@@ -11,6 +11,13 @@ import { useAuth } from "@/contexts/AuthContext";
 // Google OAuth Client ID - should be in environment variable
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
+// Debug: Log if Client ID is missing (only in production)
+if (import.meta.env.PROD && !GOOGLE_CLIENT_ID) {
+  console.error("⚠️ VITE_GOOGLE_CLIENT_ID is not set in production build!");
+  console.error("This variable must be set BEFORE building the frontend.");
+  console.error("In Railway, set VITE_GOOGLE_CLIENT_ID and trigger a new build.");
+}
+
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
