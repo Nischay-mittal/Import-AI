@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ export function FinalCTA() {
     useCase: "",
     details: "",
   });
+  const formRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -44,11 +45,13 @@ export function FinalCTA() {
       const data = await response.json();
 
       if (data.success) {
+        // Show success message
         toast({
-          title: "Message sent!",
+          title: "Form submitted successfully!",
           description: data.message || "We'll get back to you within 24 hours.",
         });
-        // Reset form
+        
+        // Reset form data
         setFormData({
           name: "",
           email: "",
@@ -57,9 +60,11 @@ export function FinalCTA() {
           useCase: "",
           details: "",
         });
-        // Reset form fields
-        const form = e.currentTarget;
-        form.reset();
+        
+        // Reset form fields safely
+        if (formRef.current) {
+          formRef.current.reset();
+        }
       } else {
         throw new Error(data.message || "Failed to send message");
       }
@@ -129,7 +134,7 @@ export function FinalCTA() {
               Fill out the form and we'll get back to you within 24 hours.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="cta-name" className="text-xs">Name *</Label>
