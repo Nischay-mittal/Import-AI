@@ -42,7 +42,18 @@ Or use the individual scripts:
    JWT_SECRET=importai_super_secret_jwt_2025
    MONGODB_URI=your_mongodb_connection_string_here
    PORT=5000
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASSWORD=your-gmail-app-password
    ```
+   
+   **Email Configuration:**
+   - For Gmail, you need to create an App Password:
+     1. Go to your Google Account settings
+     2. Enable 2-Step Verification
+     3. Go to App Passwords (https://myaccount.google.com/apppasswords)
+     4. Generate a new app password for "Mail"
+     5. Use this password as `EMAIL_PASSWORD` in your `.env` file
+   - `EMAIL_USER` should be your Gmail address (e.g., `team@importai.in` if using Google Workspace)
 
 4. **Start MongoDB** (if running locally):
    - Install MongoDB Community Edition
@@ -106,6 +117,9 @@ Or use the individual scripts:
 - `POST /api/auth/register` - Create new account
 - `POST /api/auth/login` - Authenticate user
 - `GET /api/auth/me` - Get current user (protected)
+
+#### Contact Form
+- `POST /api/contact/submit` - Submit contact form (sends email to team@importai.in with CC to snehadas.iitr@gmail.com)
 
 #### Demo Navigation
 - `GET /go/demos` - Redirect to demos page
@@ -178,6 +192,8 @@ npm run preview # Preview production build
 - `JWT_SECRET` - Secret key for JWT tokens
 - `PORT` - Server port (default: 5000)
 - `FRONTEND_URL` - Frontend URL for CORS
+- `EMAIL_USER` - Gmail address for sending emails
+- `EMAIL_PASSWORD` - Gmail App Password (not your regular password)
 
 ### Frontend (.env.local)
 - `VITE_API_URL` - Backend API URL

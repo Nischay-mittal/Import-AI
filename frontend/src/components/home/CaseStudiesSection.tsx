@@ -272,79 +272,84 @@ export function CaseStudiesSection() {
                     : "opacity-0 translate-y-8 scale-95 z-0 pointer-events-none"
                 }`}
               >
-                <div className="bg-muted/20 rounded-xl p-4 border border-border/50 backdrop-blur-sm group hover:border-primary/40 transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+                <div className="relative bg-gradient-to-br from-muted/30 via-muted/20 to-muted/10 rounded-2xl p-6 border border-border/50 backdrop-blur-md group hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 hover:scale-[1.02] overflow-hidden">
+                  {/* Animated gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                  
+                  {/* Glow effect */}
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500 -z-10"></div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center relative z-10">
                     {/* Content */}
                     <div>
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-4">
                         {study.featured && (
-                          <Badge variant="default" className="bg-yellow-500 text-black text-xs">
-                            Featured
+                          <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs font-semibold shadow-lg">
+                            ⭐ Featured
                           </Badge>
                         )}
                         {study.tags.slice(0, 2).map((tag: string, tagIndex: number) => (
-                          <Badge key={tagIndex} variant="secondary" className="text-xs">
+                          <Badge key={tagIndex} variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
                             {tag}
                           </Badge>
                         ))}
                       </div>
                       
-                      <h3 className="text-lg font-bold mb-2">{study.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-4 leading-snug">
+                      <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent group-hover:text-gradient transition-all duration-300">
+                        {study.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                         {study.description}
                       </p>
 
-                      {/* Results */}
-                      <div className="grid grid-cols-3 gap-3 mb-4">
+                      {/* Results - Enhanced */}
+                      <div className="grid grid-cols-3 gap-4 mb-6">
                         {study.results.slice(0, 3).map((result: any, resultIndex: number) => (
-                          <div key={resultIndex} className="text-center">
-                            <div className="text-lg font-bold text-gradient mb-1">
+                          <div key={resultIndex} className="text-center p-3 rounded-lg bg-background/40 border border-border/30 hover:border-primary/40 hover:bg-background/60 transition-all duration-300 group-hover:scale-105">
+                            <div className="text-xl font-bold bg-gradient-to-r from-primary via-purple-500 to-accent bg-clip-text text-transparent mb-1">
                               {result.metric}
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground font-medium">
                               {result.description}
                             </div>
                           </div>
                         ))}
                       </div>
 
-                      {/* Meta Info */}
-                      <div className="flex flex-wrap items-center gap-4 mb-4 text-xs text-muted-foreground">
-                        <div className="flex items-center space-x-1.5">
-                          <Clock className="w-3 h-3" />
-                          <span>{study.timeline}</span>
+                      {/* Meta Info - Enhanced */}
+                      <div className="flex flex-wrap items-center gap-4 mb-6 text-xs">
+                        <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-background/60 border border-border/30">
+                          <Clock className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-muted-foreground font-medium">{study.timeline}</span>
                         </div>
-                        <div className="flex items-center space-x-1.5">
-                          <TrendingUp className="w-3 h-3" />
-                          <span>{study.roi} ROI</span>
+                        <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-background/60 border border-border/30">
+                          <TrendingUp className="w-3.5 h-3.5 text-green-500" />
+                          <span className="text-muted-foreground font-medium">{study.roi} ROI</span>
                         </div>
-                        <div className="flex items-center space-x-1.5">
-                          <Users className="w-3 h-3" />
-                          <span>{study.industry}</span>
+                        <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-background/60 border border-border/30">
+                          <Users className="w-3.5 h-3.5 text-accent" />
+                          <span className="text-muted-foreground font-medium">{study.industry}</span>
                         </div>
                       </div>
 
-                      <Button variant="outline" size="sm" className="group text-xs" asChild>
+                      <Button variant="gradient" size="default" className="group font-semibold shadow-lg hover:shadow-xl transition-all duration-300" asChild>
                         <Link to={`/case-studies/${study.id}`}>
                           Read Full Case Study
-                          <ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                         </Link>
                       </Button>
                     </div>
 
-                    {/* Image */}
+                    {/* Image - Enhanced */}
                     <div>
-                      <div className="relative aspect-video rounded-xl overflow-hidden">
+                      <div className="relative aspect-video rounded-xl overflow-hidden group/image shadow-xl">
                         <img 
                           src={study.image} 
                           alt={study.company}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                        <div className="absolute bottom-3 left-3">
-                          <div className="text-white font-semibold text-sm">{study.company}</div>
-                          <div className="text-white/80 text-xs">{study.industry}</div>
-                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                       </div>
                     </div>
                   </div>
@@ -379,7 +384,6 @@ export function CaseStudiesSection() {
           <Button variant="gradient" size="default" className="px-6 py-3" asChild>
             <Link to="/case-studies">
               View All Case Studies
-              <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </Button>
         </div>
