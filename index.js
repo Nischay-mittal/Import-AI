@@ -23,6 +23,7 @@ const allowedOrigins = [
   "https://www.importai.in",
   "http://localhost:5173",
   "http://localhost:8080", // Keep for backward compatibility
+  "http://localhost:8082", // Additional local port
 ];
 
 const corsOptions = {
