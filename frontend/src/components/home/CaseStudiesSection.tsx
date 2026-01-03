@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { ArrowRight, TrendingUp, Clock, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { getApiUrl } from "@/lib/api";
 
-const STORAGE_KEY = "case_studies";
 const MAX_DISPLAY = 4;
 
 export function CaseStudiesSection() {
@@ -32,124 +32,45 @@ export function CaseStudiesSection() {
     loadCaseStudies();
   }, []);
 
-  const loadCaseStudies = () => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    let studies: any[] = [];
-    
-    if (stored) {
-      try {
-        studies = JSON.parse(stored);
-      } catch (e) {
-        console.error("Error loading case studies:", e);
+  const loadCaseStudies = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      console.log("Fetching case studies from:", `${apiUrl}/api/case-studies`);
+      const response = await fetch(`${apiUrl}/api/case-studies`);
+      
+      console.log("Response status:", response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Case studies data:", data);
+        let studies = data.caseStudies || [];
+        
+        // Sort: featured first, then by sortPriority (higher first), then by createdAt (newest first)
+        const sorted = studies.sort((a: any, b: any) => {
+          // Featured items first
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          // Then by sortPriority (higher numbers first)
+          const aPriority = a.sortPriority ?? 0;
+          const bPriority = b.sortPriority ?? 0;
+          if (aPriority !== bPriority) return bPriority - aPriority;
+          // Finally by createdAt (newest first)
+          const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bDate - aDate;
+        });
+        
+        console.log("Sorted case studies:", sorted);
+        setCaseStudies(sorted.slice(0, MAX_DISPLAY));
+      } else {
+        const errorText = await response.text();
+        console.error("Error loading case studies:", response.status, errorText);
+        setCaseStudies([]);
       }
+    } catch (error) {
+      console.error("Error loading case studies:", error);
+      setCaseStudies([]);
     }
-    
-    // If no studies in storage, use defaults
-    if (studies.length === 0) {
-      studies = [
-        {
-          id: "jupiter-outbound",
-          title: "Jupiter: Building a Multi-Channel Outbound Engine from Scratch",
-          company: "Jupiter",
-          industry: "YC S19",
-          challenge: "Manual outbound was limiting growth to 30-40 brands per week. CEO spending 10+ hours weekly on cold emails.",
-          solutionShort: "Always-on outbound SDR coordinating email and LinkedIn without human handoffs",
-          description: "How Jupiter scaled brand outreach from 40/week to 2,100/week with coordinated email + LinkedIn automation.",
-          image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop",
-          timelineShort: "Aug 2025 - Present",
-          timeline: "Aug 2025 - Present",
-          roi: "Ongoing",
-          resultsShort: [
-            { metric: "2,100+", description: "brands/week reached" },
-            { metric: "24", description: "meetings booked" },
-            { metric: "8 hrs", description: "CEO time saved/week" }
-          ],
-          tags: ["Revenue", "Outbound", "Multi-Channel"],
-          featured: false,
-          createdAt: new Date("2025-08-01").toISOString()
-        },
-        {
-          id: "techflow-lead-automation",
-          title: "TechFlow Solutions: 3x Lead Conversion with AI",
-          company: "TechFlow Solutions",
-          industry: "B2B SaaS",
-          challenge: "Manual lead qualification was eating up 20+ hours per week, and qualified leads were falling through the cracks.",
-          solutionShort: "Deployed AI lead scoring + automated nurture sequences",
-          description: "How a growing SaaS company automated their entire lead qualification process and tripled conversions.",
-          image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop",
-          timelineShort: "6 weeks",
-          timeline: "6 weeks",
-          roi: "650%",
-          resultsShort: [
-            { metric: "+285%", description: "qualified leads" },
-            { metric: "20 hrs", description: "saved per week" },
-            { metric: "+45%", description: "conversion rate" }
-          ],
-          tags: ["Revenue", "Lead Generation", "B2B SaaS"],
-          featured: false,
-          createdAt: new Date("2025-07-15").toISOString()
-        },
-        {
-          id: "growthcorp-finance-automation",
-          title: "GrowthCorp: 90% Faster Invoice Processing",
-          company: "GrowthCorp",
-          industry: "Manufacturing",
-          challenge: "Invoice processing took 3-5 days, causing cash flow issues and vendor relationship strain.",
-          solutionShort: "AI-powered OCR + automated approval workflows",
-          description: "Transforming accounts payable from a bottleneck into a competitive advantage.",
-          image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop",
-          timelineShort: "4 weeks",
-          timeline: "4 weeks",
-          roi: "420%",
-          resultsShort: [
-            { metric: "90%", description: "faster processing" },
-            { metric: "15 hrs", description: "saved per week" },
-            { metric: "99.2%", description: "accuracy rate" }
-          ],
-          tags: ["Finance", "Automation", "Manufacturing"],
-          featured: false,
-          createdAt: new Date("2025-07-01").toISOString()
-        },
-        {
-          id: "servicepro-support-ai",
-          title: "ServicePro: 65% Ticket Deflection with AI",
-          company: "ServicePro",
-          industry: "Customer Service",
-          challenge: "Support team was overwhelmed with 500+ tickets daily, response times were suffering.",
-          solutionShort: "AI support assistant + intelligent ticket routing",
-          description: "How AI transformed customer support from reactive to proactive, improving satisfaction while reducing costs.",
-          image: "https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=600&h=400&fit=crop",
-          timelineShort: "5 weeks",
-          timeline: "5 weeks",
-          roi: "380%",
-          resultsShort: [
-            { metric: "65%", description: "ticket deflection" },
-            { metric: "2.5x", description: "faster response" },
-            { metric: "+40%", description: "satisfaction score" }
-          ],
-          tags: ["Support", "AI Assistant", "Customer Service"],
-          featured: false,
-          createdAt: new Date("2025-06-15").toISOString()
-        }
-      ];
-    }
-    
-    // Sort: featured first, then by sortPriority (higher first), then by createdAt (newest first)
-    const sorted = studies.sort((a: any, b: any) => {
-      // Featured items first
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-      // Then by sortPriority (higher numbers first)
-      const aPriority = a.sortPriority ?? 0;
-      const bPriority = b.sortPriority ?? 0;
-      if (aPriority !== bPriority) return bPriority - aPriority;
-      // Finally by createdAt (newest first)
-      const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bDate - aDate;
-    });
-    
-    setCaseStudies(sorted.slice(0, MAX_DISPLAY));
   };
 
   // Convert detail format to listing format

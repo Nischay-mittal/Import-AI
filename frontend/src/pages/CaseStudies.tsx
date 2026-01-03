@@ -5,8 +5,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Clock, TrendingUp, Users, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-const STORAGE_KEY = "case_studies";
+import { getApiUrl } from "@/lib/api";
 
 export default function CaseStudies() {
   const [caseStudies, setCaseStudies] = useState<any[]>([]);
@@ -30,8 +29,8 @@ export default function CaseStudies() {
     if (!isAuthenticated) {
       navigate('/login');
     } else {
-      const api = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      window.location.href = `${api}/go/contact`;
+      const apiUrl = getApiUrl();
+      window.location.href = `${apiUrl}/go/contact`;
     }
   };
 
@@ -39,11 +38,18 @@ export default function CaseStudies() {
     loadCaseStudies();
   }, []);
 
-  const loadCaseStudies = () => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const studies = JSON.parse(stored);
+  const loadCaseStudies = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      console.log("Fetching case studies from:", `${apiUrl}/api/case-studies`);
+      const response = await fetch(`${apiUrl}/api/case-studies`);
+      
+      console.log("Response status:", response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Case studies data:", data);
+        const studies = data.caseStudies || [];
         // Sort: featured first, then by sortPriority (higher first), then by createdAt (newest first)
         const sorted = studies.sort((a: any, b: any) => {
           // Featured items first
@@ -58,87 +64,16 @@ export default function CaseStudies() {
           const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return bDate - aDate;
         });
+        console.log("Sorted case studies:", sorted);
         setCaseStudies(sorted);
-      } catch (e) {
-        console.error("Error loading case studies:", e);
+      } else {
+        const errorText = await response.text();
+        console.error("Error loading case studies:", response.status, errorText);
+        setCaseStudies([]);
       }
-    } else {
-      // Default case studies if none exist
-      const defaultStudies = [
-    {
-      id: "jupiter-outbound",
-      title: "Jupiter: Building a Multi-Channel Outbound Engine from Scratch",
-      company: "Jupiter",
-      industry: "YC S19",
-      challenge: "Manual outbound was limiting growth to 30-40 brands per week. CEO spending 10+ hours weekly on cold emails.",
-      solution: "Always-on outbound SDR coordinating email and LinkedIn without human handoffs",
-      results: [
-        { metric: "2,100+", description: "brands/week reached" },
-        { metric: "24", description: "meetings booked" },
-        { metric: "8 hrs", description: "CEO time saved/week" }
-      ],
-      timeline: "Aug 2025 - Present",
-      roi: "Ongoing",
-      description: "How Jupiter scaled brand outreach from 40/week to 2,100/week with coordinated email + LinkedIn automation.",
-      image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop",
-      tags: ["Revenue", "Outbound", "Multi-Channel"]
-    },
-    {
-      id: "techflow-lead-automation",
-      title: "TechFlow Solutions: 3x Lead Conversion with AI",
-      company: "TechFlow Solutions",
-      industry: "B2B SaaS",
-      challenge: "Manual lead qualification was eating up 20+ hours per week, and qualified leads were falling through the cracks.",
-      solution: "Deployed AI lead scoring + automated nurture sequences",
-      results: [
-        { metric: "+285%", description: "qualified leads" },
-        { metric: "20 hrs", description: "saved per week" },
-        { metric: "+45%", description: "conversion rate" }
-      ],
-      timeline: "6 weeks",
-      roi: "650%",
-      description: "How a growing SaaS company automated their entire lead qualification process and tripled conversions.",
-      image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop",
-      tags: ["Revenue", "Lead Generation", "B2B SaaS"]
-    },
-    {
-      id: "growthcorp-finance-automation",
-      title: "GrowthCorp: 90% Faster Invoice Processing",
-      company: "GrowthCorp",
-      industry: "Manufacturing",
-      challenge: "Invoice processing took 3-5 days, causing cash flow issues and vendor relationship strain.",
-      solution: "AI-powered OCR + automated approval workflows",
-      results: [
-        { metric: "90%", description: "faster processing" },
-        { metric: "15 hrs", description: "saved per week" },
-        { metric: "99.2%", description: "accuracy rate" }
-      ],
-      timeline: "4 weeks",
-      roi: "420%",
-      description: "Transforming accounts payable from a bottleneck into a competitive advantage.",
-      image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop",
-      tags: ["Finance", "Automation", "Manufacturing"]
-    },
-    {
-      id: "servicepro-support-ai",
-      title: "ServicePro: 65% Ticket Deflection with AI",
-      company: "ServicePro",
-      industry: "Customer Service",
-      challenge: "Support team was overwhelmed with 500+ tickets daily, response times were suffering.",
-      solution: "AI support assistant + intelligent ticket routing",
-      results: [
-        { metric: "65%", description: "ticket deflection" },
-        { metric: "2.5x", description: "faster response" },
-        { metric: "+40%", description: "satisfaction score" }
-      ],
-      timeline: "5 weeks",
-      roi: "380%",
-      description: "How AI transformed customer support from reactive to proactive, improving satisfaction while reducing costs.",
-      image: "https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=600&h=400&fit=crop",
-      tags: ["Support", "AI Assistant", "Customer Service"]
-    }
-      ];
-      setCaseStudies(defaultStudies);
+    } catch (error) {
+      console.error("Error loading case studies:", error);
+      setCaseStudies([]);
     }
   };
 

@@ -75,7 +75,6 @@ interface CaseStudy {
   createdAt?: string;
 }
 
-const STORAGE_KEY = "case_studies";
 const REVIEWS_STORAGE_KEY = "reviews";
 
 interface Review {
@@ -250,120 +249,31 @@ export default function Admin() {
     loadProjects();
   }, [authLoading, isAuthenticated, isAdmin, navigate, toast, userRole, token]);
 
-  const loadCaseStudies = () => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const studies = JSON.parse(stored);
-        setCaseStudies(studies);
-      } catch (e) {
-        console.error("Error loading case studies:", e);
-        // If parsing fails, try to load defaults
-        loadDefaultCaseStudies();
+  const loadCaseStudies = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/api/case-studies`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCaseStudies(data.caseStudies || []);
+      } else {
+        console.error("Error loading case studies:", response.status);
+        setCaseStudies([]);
       }
-    } else {
-      // Load default case studies if none exist
-      loadDefaultCaseStudies();
+    } catch (error) {
+      console.error("Error loading case studies:", error);
+      setCaseStudies([]);
     }
   };
 
-  const loadDefaultCaseStudies = () => {
-    // These are the default case studies shown on the website
-    const defaults: CaseStudy[] = [
-      {
-        id: "jupiter-outbound",
-        title: "Jupiter: Building a Multi-Channel Outbound Engine from Scratch",
-        client: "Jupiter (YC S19)",
-        timeline: "Aug 2025 - Present",
-        company: "Jupiter",
-        industry: "YC S19",
-        challenge: "Manual outbound was limiting growth to 30-40 brands per week. CEO spending 10+ hours weekly on cold emails.",
-        solutionShort: "Always-on outbound SDR coordinating email and LinkedIn without human handoffs",
-        description: "How Jupiter scaled brand outreach from 40/week to 2,100/week with coordinated email + LinkedIn automation.",
-        image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop",
-        timelineShort: "Aug 2025 - Present",
-        roi: "Ongoing",
-        featured: false,
-        sortPriority: 0,
-        createdAt: new Date("2025-08-01").toISOString(),
-        problem: {
-          title: "The Problem",
-          content: `Jupiter had 1000+ food creators on their platform. CPG brands needed them. But the growth team was stuck in Gmail hell.
+  // Removed loadDefaultCaseStudies - now using API
 
-This was brand-side outbound—selling Jupiter's creator network to CPG CMOs and Directors of Marketing. Manual one-off emails. No follow-up system. No sequencing. If someone didn't reply to the first email, they'd maybe send one manual follow-up a week later—if they remembered.
-
-They were reaching maybe 30-40 brands per week. At that pace, it would take 6+ months just to reach their target account list. Meanwhile, competitors were closing deals.
-
-The CEO was spending 10+ hours weekly writing cold emails instead of running the company.`
-        },
-        solution: {
-          title: "What We Built",
-          content: `An always-on outbound SDR that coordinates email and LinkedIn without human handoffs.
-
-Based on how a prospect engages, the system automatically chooses the next best action across email and LinkedIn.`,
-          howItWorks: {
-            title: "How it works:",
-            steps: [
-              "Email goes out via Instantly.ai → System watches engagement → Routes to the right next action:",
-              "If they open/reply: LinkedIn connection request with personalized note referencing Jupiter's platform",
-              "If they connect: 4-message sequence (immediate meeting ask → 2-day follow-up → final touch with Calendly)",
-              "If they don't connect: Engagement agent likes and comments on their recent posts to build familiarity, then retries connection after 5-7 days",
-              "If no email engagement: Stays in email sequence, tries different angles",
-              "One system. No manual coordination. No \"remember to follow up.\""
-            ]
-          }
-        },
-        results: {
-          title: "What Changed",
-          before: [
-            "30-40 brands reached per week (manual Gmail limit)",
-            "No LinkedIn outreach at all",
-            "No systematic follow-up",
-            "CEO spending 10+ hours/week on outreach"
-          ],
-          after: [
-            "300+ brands reached per day (2,100+ per week)—equivalent to 3-4 full-time SDRs working nonstop",
-            "Coordinated email + LinkedIn sequences running 24/7",
-            "24 meetings booked with CMOs and Directors of Marketing from 2,500 cold emails (0.96% meeting rate—above the 0.5% industry benchmark for cold executive outreach)",
-            "5.7% LinkedIn connection acceptance rate with senior executives",
-            "CEO spending ~2 hours per week reviewing conversations"
-          ],
-          bottomLine: [
-            "CEO time recovered: 8 hours/week",
-            "Brand outreach scaled: 40/week → 2,100/week",
-            "Meetings booked without manual follow-up"
-          ]
-        },
-        whyItWorked: {
-          title: "Why It Worked",
-          content: `Context-aware routing.
-
-The system doesn't just blast LinkedIn messages. It watches who's engaging with emails, personalizes the connection request based on that engagement, and adjusts the follow-up strategy based on whether they accept.
-
-For non-connectors, the engagement agent builds social proof first—so when the connection request comes later, it's not completely cold.
-
-That's why they're booking meetings at ~1% conversion despite being an unknown platform reaching senior executives.
-
-The system thinks about each prospect's journey, not just "send message → hope for reply."`
-        },
-        tech: ["n8n", "Instantly.ai", "Rules-based LinkedIn outreach with safety throttles", "PhantomBuster", "Apollo"],
-        tags: ["Revenue", "Outbound", "Multi-Channel"],
-        resultsShort: [
-          { metric: "2,100+", description: "brands/week reached" },
-          { metric: "24", description: "meetings booked" },
-          { metric: "8 hrs", description: "CEO time saved/week" }
-        ]
-      }
-    ];
-    setCaseStudies(defaults);
-    // Optionally save defaults to localStorage
-    // localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
-  };
-
-  const saveCaseStudies = (studies: CaseStudy[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(studies));
-    setCaseStudies(studies);
-  };
+  // Removed - now using API directly
 
   const handleNew = () => {
     setEditingId(null);
@@ -407,18 +317,42 @@ The system thinks about each prospect's journey, not just "send message → hope
     setFormData(study);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this case study?")) {
-      const updated = caseStudies.filter(s => s.id !== id);
-      saveCaseStudies(updated);
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this case study?")) return;
+    
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/api/case-studies/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        await loadCaseStudies();
+        toast({
+          title: "Case study deleted",
+          description: "The case study has been removed.",
+        });
+      } else {
+        const error = await response.json().catch(() => ({ message: "Failed to delete case study" }));
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete case study",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
       toast({
-        title: "Case study deleted",
-        description: "The case study has been removed.",
+        title: "Error",
+        description: error.message || "Failed to delete case study",
+        variant: "destructive",
       });
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.id || !formData.title) {
       toast({
         title: "Error",
@@ -428,7 +362,6 @@ The system thinks about each prospect's journey, not just "send message → hope
       return;
     }
 
-    const existingStudy = editingId ? caseStudies.find(s => s.id === editingId) : null;
     const study: CaseStudy = {
       id: formData.id,
       title: formData.title || "",
@@ -460,38 +393,48 @@ The system thinks about each prospect's journey, not just "send message → hope
       tags: formData.tags?.filter(t => t.trim()) || [],
       resultsShort: formData.resultsShort?.filter(r => r.metric || r.description) || [],
       featured: formData.featured || false,
-      createdAt: existingStudy?.createdAt || new Date().toISOString()
     };
 
-    let updated: CaseStudy[];
-    if (editingId) {
-      updated = caseStudies.map(s => s.id === editingId ? study : s);
-    } else {
-      updated = [...caseStudies, study];
+    try {
+      const apiUrl = getApiUrl();
+      const url = editingId 
+        ? `${apiUrl}/api/case-studies/${editingId}`
+        : `${apiUrl}/api/case-studies`;
+      
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(study),
+      });
+
+      if (response.ok) {
+        await loadCaseStudies();
+        setEditingId(null);
+        setActiveTab("list");
+        toast({
+          title: "Case study saved",
+          description: `Case study "${study.title}" has been ${editingId ? "updated" : "created"}.`,
+        });
+      } else {
+        const error = await response.json().catch(() => ({ message: "Failed to save case study" }));
+        toast({
+          title: "Error",
+          description: error.message || "Failed to save case study",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save case study",
+        variant: "destructive",
+      });
     }
-
-    // Sort: featured first, then by sortPriority (higher first), then by createdAt (newest first)
-    updated.sort((a, b) => {
-      // Featured items first
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-      // Then by sortPriority (higher numbers first)
-      const aPriority = a.sortPriority ?? 0;
-      const bPriority = b.sortPriority ?? 0;
-      if (aPriority !== bPriority) return bPriority - aPriority;
-      // Finally by createdAt (newest first)
-      const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bDate - aDate;
-    });
-
-    saveCaseStudies(updated);
-    setEditingId(null);
-    setActiveTab("list");
-    toast({
-      title: "Case study saved",
-      description: `Case study "${study.title}" has been ${editingId ? "updated" : "created"}.`,
-    });
   };
 
   const updateField = (field: string, value: any) => {

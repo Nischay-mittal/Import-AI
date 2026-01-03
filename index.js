@@ -74,6 +74,7 @@ app.use("/api/contact", require("./routes/contact"));
 app.use("/api/reviews", require("./routes/reviews"));
 app.use("/api/articles", require("./routes/articles"));
 app.use("/api/projects", require("./routes/projects"));
+app.use("/api/case-studies", require("./routes/caseStudies"));
 
 // Simple redirect to open the Demos page from the backend
 app.get("/go/demos", (req, res) => {
