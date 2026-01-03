@@ -49,7 +49,9 @@ const corsOptions = {
 };
 
 // Middleware order: JSON parser first, then CORS, then OPTIONS handler
-app.use(express.json());
+// Increase body size limit to 10MB for case studies with images/content
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cors(corsOptions));
 
 // Safe global OPTIONS handler using middleware instead of routing
