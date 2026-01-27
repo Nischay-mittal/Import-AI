@@ -1,9 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getApiUrl } from '@/lib/api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   token: string | null;
-  login: (token: string) => void;
+  userName: string | null;
+  userRole: string | null;
+  isAdmin: boolean;
+  isLoading: boolean;
+  login: (token: string, userName: string, role?: string) => void;
   logout: () => void;
 }
 
@@ -13,21 +18,93 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem('auth_token');
   });
+  const [userName, setUserName] = useState<string | null>(() => {
+    return localStorage.getItem('user_name');
+  });
+  const [userRole, setUserRole] = useState<string | null>(() => {
+    return localStorage.getItem('user_role');
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const login = (newToken: string) => {
+  // Fetch user info if token exists but userName or role is missing
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const storedToken = localStorage.getItem('auth_token');
+      const storedUserName = localStorage.getItem('user_name');
+      const storedUserRole = localStorage.getItem('user_role');
+      
+      // Always fetch user info if we have a token (to ensure role is up-to-date)
+      if (storedToken) {
+        try {
+          const apiUrl = getApiUrl();
+          const response = await fetch(`${apiUrl}/api/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${storedToken}`,
+            },
+          });
+          
+          if (response.ok) {
+            const user = await response.json();
+            if (user.name) {
+              setUserName(user.name);
+              localStorage.setItem('user_name', user.name);
+            }
+            // Always update role from server to ensure it's current
+            const role = user.role || 'user';
+            setUserRole(role);
+            localStorage.setItem('user_role', role);
+            console.log('AuthContext: User info loaded', { name: user.name, role });
+          } else if (response.status === 401) {
+            // Token is invalid, clear everything
+            console.log('AuthContext: Token invalid, clearing auth');
+            setToken(null);
+            setUserName(null);
+            setUserRole(null);
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_name');
+            localStorage.removeItem('user_role');
+          } else {
+            console.error('AuthContext: Failed to fetch user info, status:', response.status);
+          }
+        } catch (error) {
+          console.error('AuthContext: Failed to fetch user info:', error);
+          // On network error, keep existing token but mark as loaded
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // No token, not loading
+        setIsLoading(false);
+        console.log('AuthContext: No token found, loading complete');
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
+  const login = (newToken: string, name: string, role: string = 'user') => {
     setToken(newToken);
+    setUserName(name);
+    setUserRole(role);
     localStorage.setItem('auth_token', newToken);
+    localStorage.setItem('user_name', name);
+    localStorage.setItem('user_role', role);
   };
 
   const logout = () => {
     setToken(null);
+    setUserName(null);
+    setUserRole(null);
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_role');
   };
 
   const isAuthenticated = !!token;
+  const isAdmin = userRole === 'admin';
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, token, userName, userRole, isAdmin, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

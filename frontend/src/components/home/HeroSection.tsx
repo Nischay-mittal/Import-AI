@@ -1,11 +1,31 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, Play, ArrowRight, Zap, Target, Clock } from "lucide-react";
+import { Calendar, Play, ArrowRight, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export function HeroSection() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [showFirstLine, setShowFirstLine] = useState(false);
+  const [showSecondLine, setShowSecondLine] = useState(false);
+
+  useEffect(() => {
+    // Show first line with a slight delay for smooth entrance
+    const firstTimer = setTimeout(() => {
+      setShowFirstLine(true);
+    }, 200);
+    
+    // Show second line after first line appears
+    const secondTimer = setTimeout(() => {
+      setShowSecondLine(true);
+    }, 800);
+
+    return () => {
+      clearTimeout(firstTimer);
+      clearTimeout(secondTimer);
+    };
+  }, []);
 
   const handleBookDemo = () => {
     if (!isAuthenticated) {
@@ -17,91 +37,82 @@ export function HeroSection() {
     }
   };
 
-  return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-hero">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] dark:opacity-[0.05]"></div>
-      
-      {/* Corporate Background Image */}
-      <div className="absolute inset-0 opacity-[0.25] dark:opacity-[0.20]">
-        <img 
-          src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=1080&fit=crop&crop=center&auto=format&q=80"
-          alt="Corporate office scene"
-          className="w-full h-full object-cover"
-        />
-      </div>
-      
-      <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float"></div>
-      <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
-      
-      <div className="container mx-auto px-6 pt-28 pb-20 relative z-10">
-        <div className="max-w-6xl mx-auto text-center">
+    return (
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 pt-20 sm:pt-32 md:pt-40 pb-8 sm:pb-12 relative z-10">
+          <div className="max-w-6xl mx-auto text-center">
           {/* Main Headline */}
           <div className="animate-fade-in-up">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-8 whitespace-nowrap">
-              Automations that{" "}
-              <span className="text-gradient">buy back</span>{" "}
-              your time.
+            {/* Trust Badge */}
+            <div className="mb-4 sm:mb-6 flex justify-center">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent border border-yellow-500/60 text-yellow-500 animate-fade-in">
+                <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
+                Trusted by YC & Shark Tank–backed startups
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 font-medium tracking-wide px-2">
+              AI Automation Agency for Growth, Sales and Operations
+            </p>
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight mb-4 sm:mb-6 px-2">
+              {showFirstLine && (
+                <span className="inline-block animate-fade-in-down">
+                  Time is money.
+                </span>
+              )}
+              {showSecondLine && (
+                <>
+                  <br />
+                  <span className="text-gradient inline-block animate-fade-in-down" style={{ animationDelay: '0.1s' }}>
+                    We save you both.
+                  </span>
+                </>
+              )}
             </h1>
             
-            <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
-              AI agents for revenue, support, and finance ops—deployed fast, measured by results.
+            <p className="text-sm sm:text-base md:text-lg text-foreground mb-12 sm:mb-16 md:mb-24 max-w-2xl mx-auto leading-relaxed font-medium px-4">
+              Production-ready AI agents that automate growth and operations,
+              <br className="hidden sm:block" />
+              <span className="sm:hidden"> </span>built by{" "}
+              <span className="relative inline-block">
+                <span className="relative z-10 drop-shadow-sm">IIT Engineers</span>
+                <span className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent rounded-full animate-highlight origin-left opacity-100" style={{ transform: 'rotate(-1deg)', boxShadow: '0 0 8px rgba(139, 92, 246, 0.5)' }}></span>
+              </span>
+              .
             </p>
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <Button 
-              variant="hero" 
-              size="xl" 
-              className="group shadow-glow"
-              onClick={handleBookDemo}
-            >
-              <Calendar className="w-5 h-5 mr-3" />
-              Book 30-min Free Demo
-              <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform" />
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6 sm:mb-8 animate-fade-in-up px-4" style={{ animationDelay: '0.2s' }}>
+            <div className="flex flex-col items-center w-full sm:w-auto">
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="group shadow-glow w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6"
+                onClick={handleBookDemo}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Book a Free AI Consultation</span>
+                <span className="sm:hidden">Book Free Consultation</span>
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center animate-fade-in-up max-w-xs" style={{ animationDelay: '0.3s' }}>
+                No sales pitch. Actionable recommendations tailored to your workflows.
+              </p>
+            </div>
             
             <Button
               variant="glass"
-              size="xl"
-              className="group"
+              size="lg"
+              className="group w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6"
               onClick={() => {
-                const api = import.meta.env.VITE_API_URL || "http://localhost:5000";
-                window.location.href = `${api}/go/demos`;
+                navigate('/case-studies');
               }}
             >
-              <Play className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
-              See Live Demos
+              <Play className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+              View Case Studies
             </Button>
           </div>
 
-          {/* Floating Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            <div className="glass-card p-6 group hover:scale-105 transition-all duration-300">
-              <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl mb-4 mx-auto group-hover:bg-primary/20 transition-colors">
-                <Clock className="w-6 h-6 text-primary" />
-              </div>
-              <div className="text-2xl font-bold text-gradient mb-2">10–15 hrs</div>
-              <div className="text-muted-foreground">saved per week</div>
-            </div>
-
-            <div className="glass-card p-6 group hover:scale-105 transition-all duration-300">
-              <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl mb-4 mx-auto group-hover:bg-primary/20 transition-colors">
-                <Target className="w-6 h-6 text-primary" />
-              </div>
-              <div className="text-2xl font-bold text-gradient mb-2">20–30%</div>
-              <div className="text-muted-foreground">more conversions</div>
-            </div>
-
-            <div className="glass-card p-6 group hover:scale-105 transition-all duration-300">
-              <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl mb-4 mx-auto group-hover:bg-primary/20 transition-colors">
-                <Zap className="w-6 h-6 text-primary" />
-              </div>
-              <div className="text-2xl font-bold text-gradient mb-2">40–60%</div>
-              <div className="text-muted-foreground">ticket deflection</div>
-            </div>
-          </div>
         </div>
       </div>
     </section>

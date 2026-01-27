@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 import { 
   Calendar, 
   FileText, 
@@ -19,7 +20,8 @@ import {
   AlertCircle,
   Plus,
   Download,
-  ExternalLink
+  ExternalLink,
+  Shield
 } from "lucide-react";
 
 export default function Portal() {
@@ -132,6 +134,12 @@ export default function Portal() {
               </p>
             </div>
             <div className="flex gap-3">
+              <Button variant="outline" asChild>
+                <Link to="/admin">
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin Panel
+                </Link>
+              </Button>
               <Button variant="outline">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings

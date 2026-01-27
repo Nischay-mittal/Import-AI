@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "./ThemeToggle";
-import { Menu, X, Calendar, Play, LogOut } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
-  { name: "Demos", href: "/demos" },
+  { name: "Services", href: "/services" },
   { name: "Case Studies", href: "/case-studies" },
+  { name: "Projects", href: "/projects" },
+  { name: "Articles", href: "/articles" },
   { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
 ];
@@ -17,11 +18,12 @@ export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, userName, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
-    // Optionally redirect to home page
+    navigate('/');
+    setMobileMenuOpen(false);
   };
 
   const handleBookDemo = () => {
@@ -35,26 +37,26 @@ export function Navigation() {
   };
 
   return (
-    <header className="glass-card fixed top-4 left-4 right-4 z-50 px-6 py-3">
+    <header className="glass-card fixed top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 z-50 px-3 sm:px-6 py-2 sm:py-3">
       <nav className="flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-3">
+        <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
           <img 
-            src="/lovable-uploads/60f635ed-3fbe-4d07-b2aa-b6af5d734839.png" 
+            src="/Import AI Logo PNG.png" 
             alt="Import AI Logo" 
-            className="w-10 h-10 object-contain"
+            className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
           />
-          <div className="text-2xl font-bold text-gradient">Import AI</div>
+          <div className="text-lg sm:text-2xl font-bold text-gradient">Import AI</div>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-8">
+        <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
           {navigation.map((item) => (
             <Link
               key={item.name}
               to={item.href}
               className={cn(
-                "text-sm font-medium transition-colors hover:text-primary",
+                "text-xs xl:text-sm font-medium transition-colors hover:text-primary",
                 location.pathname === item.href
                   ? "text-primary"
                   : "text-muted-foreground"
@@ -66,17 +68,29 @@ export function Navigation() {
         </div>
 
         {/* Actions */}
-        <div className="hidden md:flex items-center space-x-4">
-          <ThemeToggle />
+        <div className="hidden lg:flex items-center space-x-2 xl:space-x-4">
           {isAuthenticated ? (
             <>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <span className="text-xs xl:text-sm text-muted-foreground hidden xl:inline">
+                Hello {userName || "User"}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="border-primary/50 bg-primary/5 hover:bg-primary/10 hover:border-primary text-primary font-semibold px-3 xl:px-6 text-xs xl:text-sm whitespace-nowrap" 
+                onClick={handleBookDemo}
+              >
+                <span className="hidden xl:inline">Book a Free AI Consultation</span>
+                <span className="xl:hidden">Book Demo</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
-              </Button>
-              <Button variant="hero" size="sm" className="animate-glow" onClick={handleBookDemo}>
-                <Calendar className="w-4 h-4 mr-2" />
-                Book Demo
               </Button>
             </>
           ) : (
@@ -87,21 +101,21 @@ export function Navigation() {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="md:hidden flex items-center space-x-2">
-          <ThemeToggle />
+        <div className="lg:hidden flex items-center space-x-2">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X /> : <Menu />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
         </div>
       </nav>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden mt-4 pt-4 border-t border-border">
+        <div className="lg:hidden mt-4 pt-4 border-t border-border">
           <div className="space-y-4">
             {navigation.map((item) => (
               <Link
@@ -121,13 +135,25 @@ export function Navigation() {
             <div className="pt-4 space-y-3">
               {isAuthenticated ? (
                 <>
-                  <Button variant="ghost" size="sm" className="w-full" onClick={handleLogout}>
+                  <div className="text-sm text-muted-foreground text-center pb-2">
+                    Hello {userName || "User"}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full border-primary/50 bg-primary/5 hover:bg-primary/10 hover:border-primary text-primary font-semibold" 
+                    onClick={handleBookDemo}
+                  >
+                    Book a Free AI Consultation
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full text-muted-foreground hover:text-foreground" 
+                    onClick={handleLogout}
+                  >
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
-                  </Button>
-                  <Button variant="hero" size="sm" className="w-full" onClick={handleBookDemo}>
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Book Demo
                   </Button>
                 </>
               ) : (

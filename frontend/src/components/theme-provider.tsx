@@ -6,6 +6,7 @@ type ThemeProviderProps = {
   children: React.ReactNode
   defaultTheme?: Theme
   storageKey?: string
+  forcedTheme?: "dark" | "light"
 }
 
 type ThemeProviderState = {
@@ -24,6 +25,7 @@ export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "import-ai-theme",
+  forcedTheme,
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
@@ -34,6 +36,12 @@ export function ThemeProvider({
     const root = window.document.documentElement
 
     root.classList.remove("light", "dark")
+
+    // If forcedTheme is set, always use it and ignore user preferences
+    if (forcedTheme) {
+      root.classList.add(forcedTheme)
+      return
+    }
 
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
@@ -46,11 +54,11 @@ export function ThemeProvider({
     }
 
     root.classList.add(theme)
-  }, [theme])
+  }, [theme, forcedTheme])
 
   const value = {
-    theme,
-    setTheme: (theme: Theme) => {
+    theme: forcedTheme || theme,
+    setTheme: forcedTheme ? () => {} : (theme: Theme) => {
       localStorage.setItem(storageKey, theme)
       setTheme(theme)
     },

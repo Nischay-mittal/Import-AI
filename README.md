@@ -5,53 +5,117 @@ A full-stack web application for AI automation services with user authentication
 ## Project Structure
 
 ```
+<<<<<<< HEAD
+importai/
+├── frontend/          # React + TypeScript + Vite
+├── index.js           # Backend server entry point
+├── package.json       # Backend dependencies
+├── middleware/        # Backend middleware
+├── models/            # Backend data models
+├── routes/            # Backend API routes
+=======
 import-ai-time-saver-34-main/
 ├── frontend/          # React + TypeScript + Vite
 ├── backend/           # Node.js + Express + MongoDB
+>>>>>>> 8a97c79 (Performance optimizations: reduce case studies load time)
 └── README.md
 ```
 
 ## Quick Start
 
-### Backend Setup
+### Option 1: Quick Start (Windows)
 
+**Double-click `start-local.bat`** to start both servers automatically.
+
+Or use the individual scripts:
+- `start-backend.bat` - Start backend only
+- `start-frontend.bat` - Start frontend only
+
+### Option 2: Manual Setup
+
+#### Backend Setup
+
+<<<<<<< HEAD
+1. **Install dependencies:**
+=======
 1. **Navigate to backend directory:**
    ```bash
    cd backend
    ```
 
 2. **Install dependencies:**
+>>>>>>> 8a97c79 (Performance optimizations: reduce case studies load time)
    ```bash
    npm install
    ```
 
+<<<<<<< HEAD
+2. **Set up environment variables:**
+   
+   Create a `.env` file in the root directory with:
+=======
 3. **Set up environment variables:**
-   ```bash
-   # Copy the example file
-   copy .env.example .env
+   
+   Create a `.env` file in the `backend` folder with:
+>>>>>>> 8a97c79 (Performance optimizations: reduce case studies load time)
+   ```
+   FRONTEND_URL=http://localhost:8080
+   JWT_SECRET=importai_super_secret_jwt_2025
+   MONGODB_URI=your_mongodb_connection_string_here
+   PORT=5000
+<<<<<<< HEAD
+   RESEND_API_KEY=re_your_resend_api_key_here
+   RESEND_FROM_EMAIL=team@importai.in
    ```
    
-   Edit `.env` with your values:
+   **Frontend Environment Variables:**
+   
+   Create a `.env.local` file in the `frontend` directory:
    ```
-   MONGODB_URI=mongodb://localhost:27017/importai
-   JWT_SECRET=your-secret-key-here
-   PORT=5000
-   FRONTEND_URL=http://localhost:8080
+   VITE_API_URL=http://localhost:5000
+   VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
    ```
+   
+   **Google OAuth Setup:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable Google+ API
+   - Go to "Credentials" → "Create Credentials" → "OAuth client ID"
+   - Choose "Web application"
+   - Add authorized JavaScript origins:
+     - `http://localhost:8080` (for local development)
+     - `https://importai.in` (for production)
+   - Add authorized redirect URIs:
+     - `http://localhost:8080` (for local development)
+     - `https://importai.in` (for production)
+   - Copy the Client ID and add it to `frontend/.env.local` as `VITE_GOOGLE_CLIENT_ID`
+   
+   **Email Configuration (Resend):**
+   - Sign up for Resend at https://resend.com (free tier available)
+   - Get your API key from the Resend dashboard
+   - Add `RESEND_API_KEY` to your `.env` file
+   - For production, verify your domain in Resend to send from `team@importai.in`
+   - For testing, you can use the default `onboarding@resend.dev` sender
+=======
+   ```
+>>>>>>> 8a97c79 (Performance optimizations: reduce case studies load time)
 
 4. **Start MongoDB** (if running locally):
    - Install MongoDB Community Edition
    - Start MongoDB service
-   - Or use MongoDB Atlas (cloud)
+   - Or use MongoDB Atlas (cloud) and update `MONGODB_URI` in `.env`
 
 5. **Start the backend server:**
    ```bash
+   npm start
+   # or for development with auto-reload:
    npm run dev
    ```
    
    The API will be available at `http://localhost:5000`
+   - Health check: `http://localhost:5000/health`
 
-### Frontend Setup
+#### Frontend Setup
 
 1. **Navigate to frontend directory:**
    ```bash
@@ -63,11 +127,14 @@ import-ai-time-saver-34-main/
    npm install
    ```
 
-3. **Set up environment variables:**
-   ```bash
-   # Create .env.local file
-   echo VITE_API_URL=http://localhost:5000 > .env.local
+3. **Set up environment variables (optional):**
+   
+   Create a `.env.local` file in the `frontend` folder:
    ```
+   VITE_API_URL=http://localhost:5000
+   ```
+   
+   Note: If not set, it defaults to `http://localhost:5000`
 
 4. **Start the development server:**
    ```bash
@@ -96,11 +163,17 @@ import-ai-time-saver-34-main/
 - `POST /api/auth/login` - Authenticate user
 - `GET /api/auth/me` - Get current user (protected)
 
+<<<<<<< HEAD
+#### Contact Form
+- `POST /api/contact/submit` - Submit contact form (sends email to team@importai.in with CC to snehadas.iitr@gmail.com)
+
+=======
+>>>>>>> 8a97c79 (Performance optimizations: reduce case studies load time)
 #### Demo Navigation
 - `GET /go/demos` - Redirect to demos page
 
 #### Health Check
-- `GET /api/health` - API status check
+- `GET /health` - API status check (returns `{ "status": "ok" }`)
 
 ## Testing the Authentication Flow
 
@@ -167,6 +240,10 @@ npm run preview # Preview production build
 - `JWT_SECRET` - Secret key for JWT tokens
 - `PORT` - Server port (default: 5000)
 - `FRONTEND_URL` - Frontend URL for CORS
+<<<<<<< HEAD
+- `RESEND_API_KEY` - Resend API key for sending emails (get from https://resend.com)
+=======
+>>>>>>> 8a97c79 (Performance optimizations: reduce case studies load time)
 
 ### Frontend (.env.local)
 - `VITE_API_URL` - Backend API URL
